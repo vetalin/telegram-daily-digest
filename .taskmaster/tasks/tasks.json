@@ -458,8 +458,63 @@
         "dependencies": [
           4
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement /start command handler",
+            "description": "Implement a welcome message and the main menu for the /start command.",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 11
+          },
+          {
+            "id": 2,
+            "title": "Implement /help command handler",
+            "description": "Implement a help message with available commands.",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 11
+          },
+          {
+            "id": 3,
+            "title": "Implement main menu with inline keyboard",
+            "description": "Implement the main menu with inline buttons: 'Subscribe to channel', 'My subscriptions', 'Settings'.",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 11
+          },
+          {
+            "id": 4,
+            "title": "Implement channel subscription functionality",
+            "description": "Handle channel URL, validate and save the subscription.",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 11
+          },
+          {
+            "id": 5,
+            "title": "Implement viewing subscription list",
+            "description": "Display a list of channels the user is subscribed to.",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 11
+          },
+          {
+            "id": 6,
+            "title": "Implement channel unsubscription",
+            "description": "Implement the ability to unsubscribe from a channel.",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 11
+          }
+        ]
       },
       {
         "id": 12,
@@ -553,7 +608,7 @@
     ],
     "metadata": {
       "created": "2025-08-05T16:07:00.575Z",
-      "updated": "2025-08-05T19:08:01.514Z",
+      "updated": "2025-08-05T19:25:04.819Z",
       "description": "Tasks for master context"
     }
   }

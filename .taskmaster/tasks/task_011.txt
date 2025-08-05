@@ -9,3 +9,41 @@ Implement inline keyboards and command handling in the bot to allow users to man
 
 # Test Strategy:
 Test the user interface by simulating user interactions and verifying that commands are processed correctly.
+
+# Subtasks:
+## 1. Implement /start command handler [pending]
+### Dependencies: None
+### Description: Implement a welcome message and the main menu for the /start command.
+### Details:
+
+
+## 2. Implement /help command handler [pending]
+### Dependencies: None
+### Description: Implement a help message with available commands.
+### Details:
+
+
+## 3. Implement main menu with inline keyboard [pending]
+### Dependencies: None
+### Description: Implement the main menu with inline buttons: 'Subscribe to channel', 'My subscriptions', 'Settings'.
+### Details:
+
+
+## 4. Implement channel subscription functionality [pending]
+### Dependencies: None
+### Description: Handle channel URL, validate and save the subscription.
+### Details:
+
+
+## 5. Implement viewing subscription list [pending]
+### Dependencies: None
+### Description: Display a list of channels the user is subscribed to.
+### Details:
+
+
+## 6. Implement channel unsubscription [pending]
+### Dependencies: None
+### Description: Implement the ability to unsubscribe from a channel.
+### Details:
+
+
