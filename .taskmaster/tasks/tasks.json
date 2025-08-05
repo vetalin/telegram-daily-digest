@@ -263,7 +263,7 @@
         "id": 5,
         "title": "Integrate Telegram Userbot with telegram library (GramJS)",
         "description": "Connect to the Telegram API using the telegram (GramJS) library for Node.js/TypeScript for real-time monitoring of channels.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           2
         ],
@@ -284,7 +284,7 @@
             "id": 2,
             "title": "Implement authentication with API keys",
             "description": "Develop the authentication mechanism using API keys in the telegram (GramJS) library.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
             "details": "",
             "testStrategy": ""
@@ -293,7 +293,7 @@
             "id": 3,
             "title": "Manage user sessions",
             "description": "Implement session management for users in the telegram (GramJS) client.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
             "details": "",
             "testStrategy": ""
@@ -433,7 +433,7 @@
     ],
     "metadata": {
       "created": "2025-08-05T16:07:00.575Z",
-      "updated": "2025-08-05T17:16:53.715Z",
+      "updated": "2025-08-05T17:28:31.677Z",
       "description": "Tasks for master context"
     }
   }
