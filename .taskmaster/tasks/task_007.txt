@@ -1,6 +1,6 @@
 # Task ID: 7
 # Title: Develop Content Filtering System
-# Status: pending
+# Status: done
 # Dependencies: 6
 # Priority: high
 # Description: Create a system to filter out unwanted content such as ads and spam.

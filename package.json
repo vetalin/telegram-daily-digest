@@ -24,7 +24,8 @@
     "sessions:list": "tsx src/userbot/session-cli.ts list",
     "sessions:delete": "tsx src/userbot/session-cli.ts delete",
     "sessions:cleanup": "tsx src/userbot/session-cli.ts cleanup",
-    "sessions:generate": "tsx src/userbot/session-cli.ts generate"
+    "sessions:generate": "tsx src/userbot/session-cli.ts generate",
+    "ai:test": "tsx src/test-ai-analysis.ts"
   },
   "keywords": [
     "telegram",

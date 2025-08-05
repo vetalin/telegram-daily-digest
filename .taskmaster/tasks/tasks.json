@@ -336,8 +336,45 @@
         "dependencies": [
           7
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Создать сервис ИИ анализа",
+            "description": "Создать AIAnalysisService для интеграции с OpenAI API",
+            "details": "Реализовать класс AIAnalysisService с методами для анализа контента, категоризации и оценки важности сообщений",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 8
+          },
+          {
+            "id": 2,
+            "title": "Реализовать scoring систему",
+            "description": "Создать алгоритм оценки важности новостей",
+            "details": "Разработать систему scoring для определения важности новостей на основе контента, источника и других факторов",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 8
+          },
+          {
+            "id": 3,
+            "title": "Интегрировать ИИ анализ в pipeline",
+            "description": "Интегрировать AIAnalysisService в процесс обработки сообщений",
+            "details": "Добавить вызов ИИ анализа в существующий pipeline обработки сообщений после фильтрации контента",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 8
+          },
+          {
+            "id": 4,
+            "title": "Создать тесты для ИИ анализа",
+            "description": "Написать unit и integration тесты для AIAnalysisService",
+            "details": "Создать тесты для проверки корректности анализа, категоризации и scoring системы с образцами сообщений",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 8
+          }
+        ]
       },
       {
         "id": 9,
@@ -433,7 +470,7 @@
     ],
     "metadata": {
       "created": "2025-08-05T16:07:00.575Z",
-      "updated": "2025-08-05T17:46:21.828Z",
+      "updated": "2025-08-05T18:05:21.292Z",
       "description": "Tasks for master context"
     }
   }

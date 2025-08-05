@@ -7,6 +7,7 @@ import { SessionManager } from './SessionManager';
 import { channelDAO, messageDAO } from '../database/dao';
 import { CreateMessageData, MediaType } from '../database/models';
 import { contentFilterService } from '../services/ContentFilterService';
+import { aiProcessorService } from '../services/AIProcessorService';
 
 export interface UserbotConfig {
   apiId: number;
@@ -406,12 +407,59 @@ export class TelegramUserbot {
             updateResult.error,
           );
         }
+
+        // Если сообщение прошло фильтрацию, запускаем ИИ анализ
+        if (!filterResult.isFiltered) {
+          try {
+            const channel = await this.getChannelInfo(chat);
+            const aiResult = await aiProcessorService.processSingleMessage(
+              result.data,
+              channel
+            );
+
+            if (aiResult.success) {
+              this.logger.debug('ИИ анализ завершен', {
+                messageId: result.data.message_id,
+                finalScore: aiResult.finalScore,
+                category: aiResult.category
+              });
+            } else {
+              this.logger.warn('Ошибка ИИ анализа', {
+                messageId: result.data.message_id,
+                error: aiResult.error
+              });
+            }
+          } catch (aiError) {
+            this.logger.error('Критическая ошибка ИИ анализа', {
+              messageId: result.data.message_id,
+              error: aiError
+            });
+          }
+        }
       } else {
         this.logger.error('Ошибка сохранения сообщения:', result.error);
       }
     } catch (error) {
       this.logger.error('Ошибка обработки нового сообщения:', error);
     }
+  }
+
+  /**
+   * Получение информации о канале
+   */
+  private async getChannelInfo(chat: any): Promise<any> {
+    try {
+      const channelId = await this.getOrCreateChannelId(chat);
+      const channelResult = await channelDAO.getById(channelId);
+      
+      if (channelResult.success && channelResult.data) {
+        return channelResult.data;
+      }
+    } catch (error) {
+      this.logger.warn('Не удалось получить информацию о канале', { error });
+    }
+    
+    return null;
   }
 
   /**

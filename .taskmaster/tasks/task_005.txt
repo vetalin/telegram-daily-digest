@@ -1,6 +1,6 @@
 # Task ID: 5
 # Title: Integrate Telegram Userbot with telegram library (GramJS)
-# Status: pending
+# Status: done
 # Dependencies: 2
 # Priority: high
 # Description: Connect to the Telegram API using the telegram (GramJS) library for Node.js/TypeScript for real-time monitoring of channels.
@@ -17,13 +17,13 @@ Test the connection to the Telegram API by fetching the user's channels and veri
 ### Details:
 
 
-## 2. Implement authentication with API keys [pending]
+## 2. Implement authentication with API keys [done]
 ### Dependencies: None
 ### Description: Develop the authentication mechanism using API keys in the telegram (GramJS) library.
 ### Details:
 
 
-## 3. Manage user sessions [pending]
+## 3. Manage user sessions [done]
 ### Dependencies: None
 ### Description: Implement session management for users in the telegram (GramJS) client.
 ### Details:

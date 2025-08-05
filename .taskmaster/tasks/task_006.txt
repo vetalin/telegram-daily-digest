@@ -1,6 +1,6 @@
 # Task ID: 6
 # Title: Monitor Channels for New Messages
-# Status: pending
+# Status: done
 # Dependencies: 5
 # Priority: high
 # Description: Implement functionality to monitor specified channels for new messages.

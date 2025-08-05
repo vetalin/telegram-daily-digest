@@ -1,6 +1,6 @@
 # Task ID: 4
 # Title: Implement User Registration and Profile Setup
-# Status: in-progress
+# Status: done
 # Dependencies: 3
 # Priority: high
 # Description: Develop the user registration and profile setup functionality.
@@ -11,37 +11,37 @@ Create API endpoints for user registration and profile management using Node.js 
 Write unit tests for the registration and profile setup endpoints to ensure they handle valid and invalid inputs correctly.
 
 # Subtasks:
-## 1. Создать валидацию пользовательских данных [pending]
+## 1. Создать валидацию пользовательских данных [done]
 ### Dependencies: None
 ### Description: Реализовать функции валидации для входных данных пользователя при регистрации
 ### Details:
 Создать utility функции для проверки telegram_id, username, настроек пользователя. Использовать библиотеки типа joi или yup для валидации схем.
 
-## 2. Создать API endpoint для регистрации пользователя [pending]
+## 2. Создать API endpoint для регистрации пользователя [done]
 ### Dependencies: None
 ### Description: Реализовать POST /api/users/register endpoint
 ### Details:
 Создать endpoint, который принимает данные пользователя, валидирует их и сохраняет в базу данных. Возвращает токен или подтверждение регистрации.
 
-## 3. Реализовать сервис для работы с пользователями [pending]
+## 3. Реализовать сервис для работы с пользователями [done]
 ### Dependencies: None
 ### Description: Создать UserService с методами создания, обновления и получения пользователей
 ### Details:
 Создать сервисный слой для инкапсуляции бизнес-логики работы с пользователями. Включить методы: createUser, updateUser, getUserById, getUserByTelegramId.
 
-## 4. Добавить API endpoint для обновления профиля [pending]
+## 4. Добавить API endpoint для обновления профиля [done]
 ### Dependencies: None
 ### Description: Реализовать PUT/PATCH /api/users/profile endpoint для обновления данных пользователя
 ### Details:
 Создать endpoint для обновления настроек пользователя: предпочтения уведомлений, часовой пояс, язык интерфейса и другие параметры.
 
-## 5. Добавить обработку ошибок и логирование [pending]
+## 5. Добавить обработку ошибок и логирование [done]
 ### Dependencies: None
 ### Description: Реализовать правильную обработку ошибок для всех операций с пользователями
 ### Details:
 Добавить try-catch блоки, правильные HTTP статус коды, логирование операций и ошибок. Создать middleware для обработки ошибок.
 
-## 6. Написать тесты для API endpoints [pending]
+## 6. Написать тесты для API endpoints [done]
 ### Dependencies: None
 ### Description: Создать unit и integration тесты для всех endpoints и сервисов
 ### Details:
