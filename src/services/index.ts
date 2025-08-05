@@ -9,3 +9,4 @@ export * from './NotificationService';
 export * from './CriticalNewsDetector';
 export * from './NotificationSender';
 export * from './MessageProcessingPipeline';
+export * from './DigestService';

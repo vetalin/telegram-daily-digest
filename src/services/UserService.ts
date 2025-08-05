@@ -1,24 +1,30 @@
 /**
- * UserService - handles all user-related database operations
+ * UserService - handles all user-related business logic
  */
 
-import { db } from '../database/connection';
-import logger from '../utils/logger';
 import {
   User,
   CreateUserData,
   UpdateUserData,
   UserPreferences,
-  defaultUserPreferences,
 } from '../database/models/User';
+import { userDAO, UserDAO } from '../database/dao/UserDAO';
 import {
   createUserSchema,
   updateUserSchema,
   ValidationUtils,
 } from '../utils/validation';
+import { createLogger } from '../utils/logger';
+import { Logger } from 'winston';
 
 export class UserService {
-  private readonly logger = logger.child({ service: 'UserService' });
+  private readonly logger: Logger;
+  private dao: UserDAO;
+
+  constructor(dao: UserDAO = userDAO) {
+    this.logger = createLogger('UserService');
+    this.dao = dao;
+  }
 
   /**
    * Create a new user
@@ -27,53 +33,16 @@ export class UserService {
     this.logger.info('Creating new user', {
       telegram_id: userData.telegram_id,
     });
-
     try {
-      // Validate input data
       const validatedData = createUserSchema.parse(userData);
-
-      // Merge with default preferences
-      const preferences = {
-        ...defaultUserPreferences,
-        ...(validatedData.preferences || {}),
-      };
-
-      const query = `
-        INSERT INTO users (
-          telegram_id, 
-          username, 
-          first_name, 
-          last_name, 
-          is_active, 
-          preferences, 
-          created_at, 
-          updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-        RETURNING *
-      `;
-
-      const values = [
-        validatedData.telegram_id,
-        validatedData.username || null,
-        validatedData.first_name || null,
-        validatedData.last_name || null,
-        true, // is_active defaults to true
-        JSON.stringify(preferences),
-      ];
-
-      const result = await db.query<User>(query, values);
-
-      if (result.rows.length === 0) {
-        throw new Error('Failed to create user');
+      const result = await this.dao.create(validatedData);
+      if (!result.success || !result.data) {
+        throw new Error(result.error || 'Failed to create user');
       }
-
-      const createdUser = this.parseUserResult(result.rows[0]);
       this.logger.info('User created successfully', {
-        user_id: createdUser.user_id,
+        user_id: result.data.user_id,
       });
-
-      return createdUser;
+      return result.data;
     } catch (error) {
       this.logger.error('Failed to create user', {
         telegram_id: userData.telegram_id,
@@ -90,23 +59,10 @@ export class UserService {
     this.logger.debug('Getting user by Telegram ID', {
       telegram_id: telegramId,
     });
-
     try {
-      // Validate Telegram ID
       ValidationUtils.validateTelegramId(telegramId);
-
-      const query = 'SELECT * FROM users WHERE telegram_id = $1';
-      const result = await db.query<User>(query, [telegramId]);
-
-      if (result.rows.length === 0) {
-        this.logger.debug('User not found', { telegram_id: telegramId });
-        return null;
-      }
-
-      const user = this.parseUserResult(result.rows[0]);
-      this.logger.debug('User found', { user_id: user.user_id });
-
-      return user;
+      const result = await this.dao.findByTelegramId(telegramId);
+      return result.data || null;
     } catch (error) {
       this.logger.error('Failed to get user by Telegram ID', {
         telegram_id: telegramId,
@@ -121,20 +77,9 @@ export class UserService {
    */
   async getUserById(userId: number): Promise<User | null> {
     this.logger.debug('Getting user by ID', { user_id: userId });
-
     try {
-      const query = 'SELECT * FROM users WHERE user_id = $1';
-      const result = await db.query<User>(query, [userId]);
-
-      if (result.rows.length === 0) {
-        this.logger.debug('User not found', { user_id: userId });
-        return null;
-      }
-
-      const user = this.parseUserResult(result.rows[0]);
-      this.logger.debug('User found', { user_id: user.user_id });
-
-      return user;
+      const result = await this.dao.findById(userId);
+      return result.data || null;
     } catch (error) {
       this.logger.error('Failed to get user by ID', {
         user_id: userId,
@@ -149,82 +94,21 @@ export class UserService {
    */
   async updateUser(userId: number, updateData: UpdateUserData): Promise<User> {
     this.logger.info('Updating user', { user_id: userId });
-
     try {
-      // Validate input data
       const validatedData = updateUserSchema.parse(updateData);
+      const result = await this.dao.update(userId, validatedData);
 
-      // Check if user exists
-      const existingUser = await this.getUserById(userId);
-      if (!existingUser) {
-        throw new Error(`User with ID ${userId} not found`);
+      if (!result.success || !result.data) {
+        throw new Error(
+          result.error ||
+            `User with ID ${userId} not found or failed to update.`,
+        );
       }
 
-      // Build dynamic query
-      const updateFields: string[] = [];
-      const values: any[] = [];
-      let paramCount = 1;
-
-      if (validatedData.username !== undefined) {
-        updateFields.push(`username = $${paramCount++}`);
-        values.push(validatedData.username);
-      }
-
-      if (validatedData.first_name !== undefined) {
-        updateFields.push(`first_name = $${paramCount++}`);
-        values.push(validatedData.first_name);
-      }
-
-      if (validatedData.last_name !== undefined) {
-        updateFields.push(`last_name = $${paramCount++}`);
-        values.push(validatedData.last_name);
-      }
-
-      if (validatedData.is_active !== undefined) {
-        updateFields.push(`is_active = $${paramCount++}`);
-        values.push(validatedData.is_active);
-      }
-
-      if (validatedData.preferences !== undefined) {
-        // Merge with existing preferences
-        const updatedPreferences = {
-          ...existingUser.preferences,
-          ...validatedData.preferences,
-        };
-        updateFields.push(`preferences = $${paramCount++}`);
-        values.push(JSON.stringify(updatedPreferences));
-      }
-
-      if (updateFields.length === 0) {
-        this.logger.debug('No fields to update', { user_id: userId });
-        return existingUser;
-      }
-
-      // Always update the updated_at timestamp
-      updateFields.push(`updated_at = NOW()`);
-
-      // Add user ID for WHERE clause
-      values.push(userId);
-
-      const query = `
-        UPDATE users 
-        SET ${updateFields.join(', ')}
-        WHERE user_id = $${paramCount}
-        RETURNING *
-      `;
-
-      const result = await db.query<User>(query, values);
-
-      if (result.rows.length === 0) {
-        throw new Error('Failed to update user');
-      }
-
-      const updatedUser = this.parseUserResult(result.rows[0]);
       this.logger.info('User updated successfully', {
-        user_id: updatedUser.user_id,
+        user_id: result.data.user_id,
       });
-
-      return updatedUser;
+      return result.data;
     } catch (error) {
       this.logger.error('Failed to update user', {
         user_id: userId,
@@ -242,12 +126,9 @@ export class UserService {
     preferences: Partial<UserPreferences>,
   ): Promise<User> {
     this.logger.info('Updating user preferences', { user_id: userId });
-
     try {
-      // Validate preferences
       const validatedPreferences =
         ValidationUtils.validateUserPreferences(preferences);
-
       return await this.updateUser(userId, {
         preferences: validatedPreferences,
       });
@@ -265,20 +146,9 @@ export class UserService {
    */
   async userExists(telegramId: number): Promise<boolean> {
     this.logger.debug('Checking if user exists', { telegram_id: telegramId });
-
     try {
-      ValidationUtils.validateTelegramId(telegramId);
-
-      const query = 'SELECT 1 FROM users WHERE telegram_id = $1 LIMIT 1';
-      const result = await db.query(query, [telegramId]);
-
-      const exists = result.rows.length > 0;
-      this.logger.debug('User existence check completed', {
-        telegram_id: telegramId,
-        exists,
-      });
-
-      return exists;
+      const user = await this.getUserByTelegramId(telegramId);
+      return !!user;
     } catch (error) {
       this.logger.error('Failed to check user existence', {
         telegram_id: telegramId,
@@ -293,16 +163,12 @@ export class UserService {
    */
   async getActiveUsers(): Promise<User[]> {
     this.logger.debug('Getting all active users');
-
     try {
-      const query =
-        'SELECT * FROM users WHERE is_active = true ORDER BY created_at DESC';
-      const result = await db.query<User>(query);
-
-      const users = result.rows.map((row) => this.parseUserResult(row));
-      this.logger.debug('Retrieved active users', { count: users.length });
-
-      return users;
+      const result = await this.dao.getActiveUsers();
+      if (!result.success || !result.data) {
+        return [];
+      }
+      return result.data;
     } catch (error) {
       this.logger.error('Failed to get active users', {
         error: error instanceof Error ? error.message : error,
@@ -315,47 +181,14 @@ export class UserService {
    * Deactivate user (soft delete)
    */
   async deactivateUser(userId: number): Promise<User> {
-    this.logger.info('Deactivating user', { user_id: userId });
-
-    try {
-      return await this.updateUser(userId, { is_active: false });
-    } catch (error) {
-      this.logger.error('Failed to deactivate user', {
-        user_id: userId,
-        error: error instanceof Error ? error.message : error,
-      });
-      throw error;
-    }
+    return this.updateUser(userId, { is_active: false });
   }
 
   /**
    * Reactivate user
    */
   async reactivateUser(userId: number): Promise<User> {
-    this.logger.info('Reactivating user', { user_id: userId });
-
-    try {
-      return await this.updateUser(userId, { is_active: true });
-    } catch (error) {
-      this.logger.error('Failed to reactivate user', {
-        user_id: userId,
-        error: error instanceof Error ? error.message : error,
-      });
-      throw error;
-    }
-  }
-
-  /**
-   * Parse database result to User object (handles JSON parsing for preferences)
-   */
-  private parseUserResult(row: any): User {
-    return {
-      ...row,
-      preferences:
-        typeof row.preferences === 'string'
-          ? JSON.parse(row.preferences)
-          : row.preferences,
-    };
+    return this.updateUser(userId, { is_active: true });
   }
 }
 

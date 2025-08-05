@@ -9,6 +9,7 @@ import {
   errorHandler,
   notFoundHandler,
 } from './middleware/errorHandler';
+import { digestService } from './services';
 
 // Load environment variables
 dotenv.config();
@@ -59,6 +60,9 @@ const server = app.listen(PORT, () => {
   logger.info(`🚀 Server is running on port ${PORT}`);
   logger.info(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`🔗 Health check: http://localhost:${PORT}/health`);
+
+  // Schedule daily digests
+  digestService.scheduleDailyDigest();
 });
 
 // Graceful shutdown
