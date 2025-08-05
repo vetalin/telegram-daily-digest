@@ -110,6 +110,138 @@ export class UserbotService {
       return { valid: false, errors };
     }
   }
+
+  /**
+   * Запускает мониторинг каналов
+   */
+  async startChannelMonitoring(): Promise<void> {
+    if (!this.userbot) {
+      throw new Error('Userbot не инициализирован');
+    }
+
+    try {
+      await this.userbot.startMonitoring();
+      this.logger.info('✅ Мониторинг каналов запущен через сервис');
+    } catch (error) {
+      this.logger.error('❌ Ошибка запуска мониторинга через сервис:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Останавливает мониторинг каналов
+   */
+  async stopChannelMonitoring(): Promise<void> {
+    if (!this.userbot) {
+      throw new Error('Userbot не инициализирован');
+    }
+
+    try {
+      await this.userbot.stopMonitoring();
+      this.logger.info('⏹️ Мониторинг каналов остановлен через сервис');
+    } catch (error) {
+      this.logger.error('❌ Ошибка остановки мониторинга через сервис:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Добавляет канал в мониторинг
+   */
+  async addChannelToMonitoring(channelIdentifier: string): Promise<void> {
+    if (!this.userbot) {
+      throw new Error('Userbot не инициализирован');
+    }
+
+    try {
+      await this.userbot.addChannelToMonitoring(channelIdentifier);
+      this.logger.info(`Канал добавлен в мониторинг: ${channelIdentifier}`);
+    } catch (error) {
+      this.logger.error(`Ошибка добавления канала в мониторинг: ${channelIdentifier}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Удаляет канал из мониторинга
+   */
+  async removeChannelFromMonitoring(channelIdentifier: string): Promise<void> {
+    if (!this.userbot) {
+      throw new Error('Userbot не инициализирован');
+    }
+
+    try {
+      await this.userbot.removeChannelFromMonitoring(channelIdentifier);
+      this.logger.info(`Канал удален из мониторинга: ${channelIdentifier}`);
+    } catch (error) {
+      this.logger.error(`Ошибка удаления канала из мониторинга: ${channelIdentifier}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Получает список мониторимых каналов
+   */
+  getMonitoredChannels(): string[] {
+    if (!this.userbot) {
+      throw new Error('Userbot не инициализирован');
+    }
+
+    return this.userbot.getMonitoredChannels();
+  }
+
+  /**
+   * Проверяет статус мониторинга
+   */
+  isMonitoringActive(): boolean {
+    if (!this.userbot) {
+      return false;
+    }
+
+    return this.userbot.isMonitoringActive();
+  }
+
+  /**
+   * Инициализирует userbot и автоматически запускает мониторинг, если есть каналы
+   */
+  async initializeWithMonitoring(): Promise<void> {
+    await this.initialize();
+
+    // Если есть каналы для мониторинга, запускаем мониторинг
+    const monitoredChannels = this.getMonitoredChannels();
+    
+    if (monitoredChannels.length > 0) {
+      this.logger.info(`Найдено ${monitoredChannels.length} каналов для мониторинга, запускаем автоматически`);
+      await this.startChannelMonitoring();
+    } else {
+      this.logger.info('Каналы для мониторинга не найдены, мониторинг не запущен');
+    }
+  }
+
+  /**
+   * Получает статистику мониторинга
+   */
+  getMonitoringStatus(): {
+    isActive: boolean;
+    channelsCount: number;
+    channels: string[];
+  } {
+    if (!this.userbot) {
+      return {
+        isActive: false,
+        channelsCount: 0,
+        channels: [],
+      };
+    }
+
+    const channels = this.getMonitoredChannels();
+    
+    return {
+      isActive: this.isMonitoringActive(),
+      channelsCount: channels.length,
+      channels,
+    };
+  }
 }
 
 // Создаем singleton instance
