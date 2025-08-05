@@ -386,8 +386,54 @@
         "dependencies": [
           8
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Создать NotificationService",
+            "description": "Создать основной сервис для управления уведомлениями",
+            "details": "Реализовать NotificationService с методами для создания, отправки и управления уведомлениями",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 9
+          },
+          {
+            "id": 2,
+            "title": "Реализовать детектор критических новостей",
+            "description": "Создать логику определения критических сообщений на основе ИИ анализа",
+            "details": "Реализовать алгоритм, который определяет критичность сообщений на основе importance_score и пользовательских предпочтений",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 9
+          },
+          {
+            "id": 3,
+            "title": "Создать компонент отправки уведомлений",
+            "description": "Реализовать отправку push-уведомлений через Telegram Bot API",
+            "details": "Создать компонент для отправки уведомлений пользователям с учетом их предпочтений и тихих часов",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 9
+          },
+          {
+            "id": 4,
+            "title": "Интегрировать в pipeline обработки",
+            "description": "Интегрировать систему уведомлений в существующий pipeline обработки сообщений",
+            "details": "Добавить вызов системы уведомлений после ИИ анализа сообщений в общий workflow",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 9
+          },
+          {
+            "id": 5,
+            "title": "Написать тесты для системы уведомлений",
+            "description": "Создать unit и integration тесты для всех компонентов системы уведомлений",
+            "details": "Написать тесты для NotificationService, детектора критических новостей и отправки уведомлений",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 9
+          }
+        ]
       },
       {
         "id": 10,
@@ -470,7 +516,7 @@
     ],
     "metadata": {
       "created": "2025-08-05T16:07:00.575Z",
-      "updated": "2025-08-05T18:05:21.292Z",
+      "updated": "2025-08-05T18:31:21.733Z",
       "description": "Tasks for master context"
     }
   }

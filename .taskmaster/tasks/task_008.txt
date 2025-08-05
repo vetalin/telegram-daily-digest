@@ -1,6 +1,6 @@
 # Task ID: 8
 # Title: Implement AI Analysis for Content Categorization
-# Status: in-progress
+# Status: done
 # Dependencies: 7
 # Priority: high
 # Description: Develop AI-based analysis for categorizing content and determining importance.
@@ -11,25 +11,25 @@ Integrate OpenAI API or local models to analyze messages for themes, importance,
 Run test cases with sample messages to validate the categorization and scoring accuracy.
 
 # Subtasks:
-## 1. Создать сервис ИИ анализа [pending]
+## 1. Создать сервис ИИ анализа [done]
 ### Dependencies: None
 ### Description: Создать AIAnalysisService для интеграции с OpenAI API
 ### Details:
 Реализовать класс AIAnalysisService с методами для анализа контента, категоризации и оценки важности сообщений
 
-## 2. Реализовать scoring систему [pending]
+## 2. Реализовать scoring систему [done]
 ### Dependencies: None
 ### Description: Создать алгоритм оценки важности новостей
 ### Details:
 Разработать систему scoring для определения важности новостей на основе контента, источника и других факторов
 
-## 3. Интегрировать ИИ анализ в pipeline [pending]
+## 3. Интегрировать ИИ анализ в pipeline [done]
 ### Dependencies: None
 ### Description: Интегрировать AIAnalysisService в процесс обработки сообщений
 ### Details:
 Добавить вызов ИИ анализа в существующий pipeline обработки сообщений после фильтрации контента
 
-## 4. Создать тесты для ИИ анализа [pending]
+## 4. Создать тесты для ИИ анализа [done]
 ### Dependencies: None
 ### Description: Написать unit и integration тесты для AIAnalysisService
 ### Details:

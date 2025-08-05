@@ -1,6 +1,6 @@
 # Task ID: 9
 # Title: Create Immediate Notification System
-# Status: pending
+# Status: in-progress
 # Dependencies: 8
 # Priority: high
 # Description: Develop a system for sending immediate notifications for critical news.
@@ -9,3 +9,35 @@ Implement logic to analyze incoming messages for criticality and send push notif
 
 # Test Strategy:
 Simulate critical messages and verify that notifications are sent to users as expected.
+
+# Subtasks:
+## 1. Создать NotificationService [pending]
+### Dependencies: None
+### Description: Создать основной сервис для управления уведомлениями
+### Details:
+Реализовать NotificationService с методами для создания, отправки и управления уведомлениями
+
+## 2. Реализовать детектор критических новостей [pending]
+### Dependencies: None
+### Description: Создать логику определения критических сообщений на основе ИИ анализа
+### Details:
+Реализовать алгоритм, который определяет критичность сообщений на основе importance_score и пользовательских предпочтений
+
+## 3. Создать компонент отправки уведомлений [pending]
+### Dependencies: None
+### Description: Реализовать отправку push-уведомлений через Telegram Bot API
+### Details:
+Создать компонент для отправки уведомлений пользователям с учетом их предпочтений и тихих часов
+
+## 4. Интегрировать в pipeline обработки [pending]
+### Dependencies: None
+### Description: Интегрировать систему уведомлений в существующий pipeline обработки сообщений
+### Details:
+Добавить вызов системы уведомлений после ИИ анализа сообщений в общий workflow
+
+## 5. Написать тесты для системы уведомлений [pending]
+### Dependencies: None
+### Description: Создать unit и integration тесты для всех компонентов системы уведомлений
+### Details:
+Написать тесты для NotificationService, детектора критических новостей и отправки уведомлений
+

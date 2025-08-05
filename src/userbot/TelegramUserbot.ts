@@ -8,6 +8,7 @@ import { channelDAO, messageDAO } from '../database/dao';
 import { CreateMessageData, MediaType } from '../database/models';
 import { contentFilterService } from '../services/ContentFilterService';
 import { aiProcessorService } from '../services/AIProcessorService';
+import { NotificationService } from '../services/NotificationService';
 
 export interface UserbotConfig {
   apiId: number;
@@ -41,13 +42,18 @@ export class TelegramUserbot {
   private sessionManager: SessionManager;
   private monitoredChannels: Set<string> = new Set();
   private isMonitoring: boolean = false;
+  private notificationService?: NotificationService;
 
-  constructor(config: UserbotConfig) {
+  constructor(
+    config: UserbotConfig,
+    notificationService?: NotificationService,
+  ) {
     this.config = config;
     this.logger = createLogger('TelegramUserbot');
     this.sessionManager = new SessionManager(
       config.sessionPath || './sessions',
     );
+    this.notificationService = notificationService;
 
     // Инициализируем клиент с пустой сессией (будет загружена позже)
     this.client = new TelegramApi(
@@ -414,25 +420,72 @@ export class TelegramUserbot {
             const channel = await this.getChannelInfo(chat);
             const aiResult = await aiProcessorService.processSingleMessage(
               result.data,
-              channel
+              channel,
             );
 
             if (aiResult.success) {
               this.logger.debug('ИИ анализ завершен', {
                 messageId: result.data.message_id,
                 finalScore: aiResult.finalScore,
-                category: aiResult.category
+                category: aiResult.category,
               });
+
+              // Обрабатываем сообщение для мгновенных уведомлений
+              if (this.notificationService) {
+                try {
+                  // Получаем обновленное сообщение из базы данных с новыми данными ИИ анализа
+                  const updatedMessageResult = await messageDAO.getById(
+                    result.data.message_id,
+                  );
+
+                  if (
+                    updatedMessageResult.success &&
+                    updatedMessageResult.data
+                  ) {
+                    const notificationResult =
+                      await this.notificationService.processMessageForNotifications(
+                        updatedMessageResult.data,
+                      );
+
+                    if (
+                      notificationResult.success &&
+                      notificationResult.data &&
+                      notificationResult.data.length > 0
+                    ) {
+                      this.logger.info('Созданы мгновенные уведомления', {
+                        messageId: result.data.message_id,
+                        notificationsCount: notificationResult.data.length,
+                        importanceScore:
+                          updatedMessageResult.data.importance_score,
+                      });
+                    } else if (notificationResult.success) {
+                      this.logger.debug(
+                        'Уведомления не созданы - сообщение не критичное',
+                        {
+                          messageId: result.data.message_id,
+                          importanceScore:
+                            updatedMessageResult.data.importance_score,
+                        },
+                      );
+                    }
+                  }
+                } catch (notificationError) {
+                  this.logger.error('Ошибка при создании уведомлений', {
+                    messageId: result.data.message_id,
+                    error: notificationError,
+                  });
+                }
+              }
             } else {
               this.logger.warn('Ошибка ИИ анализа', {
                 messageId: result.data.message_id,
-                error: aiResult.error
+                error: aiResult.error,
               });
             }
           } catch (aiError) {
             this.logger.error('Критическая ошибка ИИ анализа', {
               messageId: result.data.message_id,
-              error: aiError
+              error: aiError,
             });
           }
         }
@@ -451,14 +504,14 @@ export class TelegramUserbot {
     try {
       const channelId = await this.getOrCreateChannelId(chat);
       const channelResult = await channelDAO.getById(channelId);
-      
+
       if (channelResult.success && channelResult.data) {
         return channelResult.data;
       }
     } catch (error) {
       this.logger.warn('Не удалось получить информацию о канале', { error });
     }
-    
+
     return null;
   }
 
