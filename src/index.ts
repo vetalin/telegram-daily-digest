@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import throttle from 'express-throttle';
 import { createLogger } from './utils/logger';
 import userRoutes from './routes/users';
 import {
@@ -23,6 +24,23 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+const throttleOptions = {
+  rate: '100/m',
+  burst: 20,
+  on_throttled: (
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction,
+    bucket: any,
+  ) => {
+    res
+      .status(503)
+      .json({ message: 'Too many requests, please try again later.' });
+  },
+};
+
+app.use(throttle(throttleOptions));
 
 // Request logging middleware
 app.use(requestLogger);
