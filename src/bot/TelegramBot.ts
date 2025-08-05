@@ -39,14 +39,26 @@ export class TelegramBotService {
   private config: BotConfig;
   private isInitialized: boolean = false;
 
-  constructor(config: BotConfig) {
-    this.config = config;
+import config from '../config';
+// ...
+  constructor(botConfig?: BotConfig) {
     this.logger = createLogger('TelegramBot');
 
+    if (botConfig) {
+      this.config = botConfig;
+    } else {
+      this.config = {
+        token: config.botToken,
+        webhookUrl: config.webhookUrl,
+        polling: config.nodeEnv !== 'production',
+      };
+    }
+// ...
+
     // Создаем экземпляр бота
-    this.bot = new TelegramBot(config.token, {
-      polling: config.polling || false,
-      webHook: !config.polling, // Если не используем polling, то используем webhook
+    this.bot = new TelegramBot(this.config.token, {
+      polling: this.config.polling,
+      webHook: this.config.webhookUrl ? { url: this.config.webhookUrl } : undefined,
     });
   }
 

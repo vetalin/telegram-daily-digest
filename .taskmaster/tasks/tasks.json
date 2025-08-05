@@ -472,7 +472,44 @@
           3
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement encryption for API keys and tokens",
+            "description": "Encrypt API keys and tokens to prevent unauthorized access.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 12
+          },
+          {
+            "id": 2,
+            "title": "Set up rate limiting",
+            "description": "Set up rate limiting for bot requests to prevent abuse.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 12
+          },
+          {
+            "id": 3,
+            "title": "Ensure GDPR compliance",
+            "description": "Ensure compliance with GDPR for user data handling, including data access, rectification, and erasure requests.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 12
+          },
+          {
+            "id": 4,
+            "title": "Conduct a security audit",
+            "description": "Conduct a security audit to verify that all sensitive data is encrypted, rate limits are enforced, and GDPR compliance is met.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 12
+          }
+        ]
       },
       {
         "id": 13,

@@ -1,9 +1,9 @@
 {
   "models": {
     "main": {
-      "provider": "openrouter",
-      "modelId": "openai/gpt-4o-mini",
-      "maxTokens": 100000,
+      "provider": "gemini-cli",
+      "modelId": "gemini-2.5-pro",
+      "maxTokens": 65536,
       "temperature": 0.2
     },
     "research": {

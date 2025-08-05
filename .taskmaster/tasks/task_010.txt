@@ -1,6 +1,6 @@
 # Task ID: 10
 # Title: Generate Daily Digests
-# Status: pending
+# Status: done
 # Dependencies: 9
 # Priority: high
 # Description: Implement functionality to create structured daily digests of news.
