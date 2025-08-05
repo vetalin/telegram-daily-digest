@@ -66,9 +66,9 @@ export class MessageDAO {
         // Сообщение уже существует, получаем его
         const existingMessage = await this.getByTelegramId(
           data.telegram_message_id,
-          data.channel_id
+          data.channel_id,
         );
-        
+
         if (existingMessage.success && existingMessage.data) {
           this.logger.debug('Сообщение уже существует', {
             telegramMessageId: data.telegram_message_id,
@@ -103,7 +103,7 @@ export class MessageDAO {
    */
   async getByTelegramId(
     telegramMessageId: number,
-    channelId: number
+    channelId: number,
   ): Promise<DatabaseResult<Message>> {
     try {
       const query = `
@@ -113,7 +113,10 @@ export class MessageDAO {
         WHERE m.telegram_message_id = $1 AND m.channel_id = $2
       `;
 
-      const result = await db.query<Message>(query, [telegramMessageId, channelId]);
+      const result = await db.query<Message>(query, [
+        telegramMessageId,
+        channelId,
+      ]);
 
       if (result.rows.length === 0) {
         return {
@@ -174,7 +177,7 @@ export class MessageDAO {
    */
   async getMessages(
     filters?: MessageFilters,
-    options?: PaginationOptions
+    options?: PaginationOptions,
   ): Promise<PaginatedResult<Message>> {
     try {
       let query = `
@@ -234,7 +237,9 @@ export class MessageDAO {
         }
 
         if (filters.query && filters.fields) {
-          const searchFields = filters.fields.map(field => `${field} ILIKE $${paramIndex}`).join(' OR ');
+          const searchFields = filters.fields
+            .map((field) => `${field} ILIKE $${paramIndex}`)
+            .join(' OR ');
           filterClause += ` AND (${searchFields})`;
           values.push(`%${filters.query}%`);
           paramIndex++;
@@ -256,7 +261,10 @@ export class MessageDAO {
 
       const [dataResult, countResult] = await Promise.all([
         db.query<Message>(query, values),
-        db.query<{ total: string }>(countQuery, values.slice(0, paramIndex - (options ? 2 : 0))),
+        db.query<{ total: string }>(
+          countQuery,
+          values.slice(0, paramIndex - (options ? 2 : 0)),
+        ),
       ]);
 
       const total = parseInt(countResult.rows[0].total);
@@ -284,7 +292,10 @@ export class MessageDAO {
   /**
    * Обновляет сообщение
    */
-  async update(messageId: number, data: UpdateMessageData): Promise<DatabaseResult<Message>> {
+  async update(
+    messageId: number,
+    data: UpdateMessageData,
+  ): Promise<DatabaseResult<Message>> {
     try {
       const updateFields: string[] = [];
       const values: any[] = [];
@@ -358,7 +369,10 @@ export class MessageDAO {
   /**
    * Обновляет анализ сообщения
    */
-  async updateAnalysis(messageId: number, analysis: MessageAnalysis): Promise<DatabaseResult<Message>> {
+  async updateAnalysis(
+    messageId: number,
+    analysis: MessageAnalysis,
+  ): Promise<DatabaseResult<Message>> {
     try {
       const query = `
         UPDATE messages
@@ -370,11 +384,7 @@ export class MessageDAO {
         RETURNING *
       `;
 
-      const values = [
-        analysis.importance_score,
-        analysis.category,
-        messageId,
-      ];
+      const values = [analysis.importance_score, analysis.category, messageId];
 
       const result = await db.query<Message>(query, values);
 
@@ -441,7 +451,9 @@ export class MessageDAO {
   /**
    * Получает необработанные сообщения для анализа
    */
-  async getUnprocessedMessages(limit: number = 100): Promise<DatabaseResult<Message[]>> {
+  async getUnprocessedMessages(
+    limit: number = 100,
+  ): Promise<DatabaseResult<Message[]>> {
     try {
       const query = `
         SELECT m.*, c.channel_name, c.channel_username
@@ -510,7 +522,7 @@ export class MessageDAO {
    */
   async searchMessages(
     searchQuery: string,
-    options?: PaginationOptions
+    options?: PaginationOptions,
   ): Promise<PaginatedResult<Message>> {
     try {
       const query = `
@@ -560,6 +572,133 @@ export class MessageDAO {
         page: 1,
         limit: 10,
         total_pages: 0,
+      };
+    }
+  }
+
+  /**
+   * Обновляет статус фильтрации сообщения
+   */
+  async updateFilterStatus(
+    messageId: number,
+    isFiltered: boolean,
+    filterReasons?: string[],
+  ): Promise<DatabaseResult<Message>> {
+    try {
+      const query = `
+        UPDATE messages 
+        SET is_filtered = $1, updated_at = CURRENT_TIMESTAMP
+        WHERE message_id = $2
+        RETURNING *
+      `;
+
+      const values = [isFiltered, messageId];
+      const result = await db.query<Message>(query, values);
+
+      if (result.rowCount === 0) {
+        return {
+          success: false,
+          error: 'Сообщение не найдено',
+        };
+      }
+
+      this.logger.debug('Статус фильтрации обновлен', {
+        messageId,
+        isFiltered,
+        filterReasons: filterReasons?.join(', '),
+      });
+
+      return {
+        success: true,
+        data: result.rows[0],
+        affected_rows: result.rowCount || 0,
+      };
+    } catch (error) {
+      this.logger.error('Ошибка обновления статуса фильтрации:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Неизвестная ошибка',
+      };
+    }
+  }
+
+  /**
+   * Получает сообщения, которые еще не прошли фильтрацию
+   */
+  async getUnfilteredMessages(
+    limit: number = 100,
+  ): Promise<DatabaseResult<Message[]>> {
+    try {
+      const query = `
+        SELECT m.*, c.channel_name, c.channel_username
+        FROM messages m
+        LEFT JOIN channels c ON m.channel_id = c.channel_id
+        WHERE m.is_filtered = false
+        ORDER BY m.created_at ASC
+        LIMIT $1
+      `;
+
+      const result = await db.query<Message>(query, [limit]);
+
+      return {
+        success: true,
+        data: result.rows,
+      };
+    } catch (error) {
+      this.logger.error('Ошибка получения нефильтрованных сообщений:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Неизвестная ошибка',
+      };
+    }
+  }
+
+  /**
+   * Получает статистику фильтрации
+   */
+  async getFilterStats(): Promise<
+    DatabaseResult<{
+      total: number;
+      filtered: number;
+      unfiltered: number;
+      filterRate: number;
+    }>
+  > {
+    try {
+      const query = `
+        SELECT 
+          COUNT(*) as total,
+          COUNT(CASE WHEN is_filtered = true THEN 1 END) as filtered,
+          COUNT(CASE WHEN is_filtered = false THEN 1 END) as unfiltered
+        FROM messages
+      `;
+
+      const result = await db.query<{
+        total: string;
+        filtered: string;
+        unfiltered: string;
+      }>(query);
+
+      const row = result.rows[0];
+      const total = parseInt(row.total);
+      const filtered = parseInt(row.filtered);
+      const unfiltered = parseInt(row.unfiltered);
+      const filterRate = total > 0 ? (filtered / total) * 100 : 0;
+
+      return {
+        success: true,
+        data: {
+          total,
+          filtered,
+          unfiltered,
+          filterRate: Math.round(filterRate * 100) / 100, // Округляем до 2 знаков
+        },
+      };
+    } catch (error) {
+      this.logger.error('Ошибка получения статистики фильтрации:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Неизвестная ошибка',
       };
     }
   }

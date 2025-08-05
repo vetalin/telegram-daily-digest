@@ -20,6 +20,7 @@
     "db:generate": "npx prisma generate",
     "db:studio": "npx prisma studio",
     "userbot:test": "tsx src/userbot/test-connection.ts",
+    "monitoring:test": "tsx src/test-monitoring.ts",
     "sessions:list": "tsx src/userbot/session-cli.ts list",
     "sessions:delete": "tsx src/userbot/session-cli.ts delete",
     "sessions:cleanup": "tsx src/userbot/session-cli.ts cleanup",

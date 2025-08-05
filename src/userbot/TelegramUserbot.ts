@@ -6,6 +6,7 @@ import { createLogger } from '../utils/logger';
 import { SessionManager } from './SessionManager';
 import { channelDAO, messageDAO } from '../database/dao';
 import { CreateMessageData, MediaType } from '../database/models';
+import { contentFilterService } from '../services/ContentFilterService';
 
 export interface UserbotConfig {
   apiId: number;
@@ -179,7 +180,7 @@ export class TelegramUserbot {
         if (this.isMonitoring) {
           await this.stopMonitoring();
         }
-        
+
         await this.client.disconnect();
         this.isConnected = false;
         this.logger.info('Отключен от Telegram API');
@@ -289,7 +290,10 @@ export class TelegramUserbot {
 
     try {
       // Добавляем обработчик новых сообщений
-      this.client.addEventHandler(this.handleNewMessage.bind(this), new NewMessage({}));
+      this.client.addEventHandler(
+        this.handleNewMessage.bind(this),
+        new NewMessage({}),
+      );
 
       this.isMonitoring = true;
       this.logger.info('✅ Мониторинг каналов запущен');
@@ -310,7 +314,10 @@ export class TelegramUserbot {
 
     try {
       // Удаляем обработчики событий
-      this.client.removeEventHandler(this.handleNewMessage.bind(this), new NewMessage({}));
+      this.client.removeEventHandler(
+        this.handleNewMessage.bind(this),
+        new NewMessage({}),
+      );
 
       this.isMonitoring = false;
       this.logger.info('⏹️ Мониторинг каналов остановлен');
@@ -356,12 +363,49 @@ export class TelegramUserbot {
       // Сохраняем сообщение в базу данных
       const result = await messageDAO.create(messageData);
 
-      if (result.success) {
-        this.logger.info('Сообщение сохранено', {
-          messageId: result.data?.message_id,
+      if (result.success && result.data) {
+        // Применяем фильтрацию контента
+        const filterResult = await contentFilterService.filterContent(
+          messageData.content,
+          messageData.media_type,
+        );
+
+        // Обновляем статус фильтрации в базе данных
+        const updateResult = await messageDAO.updateFilterStatus(
+          result.data.message_id,
+          !filterResult.isFiltered, // is_filtered = true означает "прошло фильтрацию" (не заблокировано)
+          filterResult.reasons,
+        );
+
+        this.logger.info('Сообщение сохранено и обработано', {
+          messageId: result.data.message_id,
           channelTitle: chat.title,
-          content: messageData.content.substring(0, 100) + (messageData.content.length > 100 ? '...' : ''),
+          content:
+            messageData.content.substring(0, 100) +
+            (messageData.content.length > 100 ? '...' : ''),
+          isFiltered: !filterResult.isFiltered,
+          blocked: filterResult.isFiltered,
+          filterReasons: filterResult.reasons,
+          confidence: filterResult.confidence,
         });
+
+        // Если контент заблокирован, логируем это отдельно
+        if (filterResult.isFiltered) {
+          this.logger.warn('Контент заблокирован фильтром', {
+            messageId: result.data.message_id,
+            channelTitle: chat.title,
+            reasons: filterResult.reasons,
+            confidence: filterResult.confidence,
+            content: messageData.content.substring(0, 200),
+          });
+        }
+
+        if (!updateResult.success) {
+          this.logger.error(
+            'Ошибка обновления статуса фильтрации:',
+            updateResult.error,
+          );
+        }
       } else {
         this.logger.error('Ошибка сохранения сообщения:', result.error);
       }
@@ -385,9 +429,14 @@ export class TelegramUserbot {
       // Сохраняем канал в базу данных, если его еще нет
       await this.getOrCreateChannelId(entity);
 
-      this.logger.info(`Канал добавлен в мониторинг: ${entity.title} (${channelId})`);
+      this.logger.info(
+        `Канал добавлен в мониторинг: ${entity.title} (${channelId})`,
+      );
     } catch (error) {
-      this.logger.error(`Ошибка добавления канала в мониторинг: ${channelIdentifier}`, error);
+      this.logger.error(
+        `Ошибка добавления канала в мониторинг: ${channelIdentifier}`,
+        error,
+      );
       throw error;
     }
   }
@@ -402,9 +451,14 @@ export class TelegramUserbot {
 
       this.monitoredChannels.delete(channelId);
 
-      this.logger.info(`Канал удален из мониторинга: ${entity.title} (${channelId})`);
+      this.logger.info(
+        `Канал удален из мониторинга: ${entity.title} (${channelId})`,
+      );
     } catch (error) {
-      this.logger.error(`Ошибка удаления канала из мониторинга: ${channelIdentifier}`, error);
+      this.logger.error(
+        `Ошибка удаления канала из мониторинга: ${channelIdentifier}`,
+        error,
+      );
       throw error;
     }
   }
@@ -429,15 +483,17 @@ export class TelegramUserbot {
   async loadMonitoredChannelsFromDB(): Promise<void> {
     try {
       const result = await channelDAO.getActiveChannels();
-      
+
       if (result.data) {
         this.monitoredChannels.clear();
-        
+
         for (const channel of result.data) {
           this.monitoredChannels.add(channel.telegram_channel_id.toString());
         }
 
-        this.logger.info(`Загружено ${result.data.length} каналов для мониторинга из БД`);
+        this.logger.info(
+          `Загружено ${result.data.length} каналов для мониторинга из БД`,
+        );
       }
     } catch (error) {
       this.logger.error('Ошибка загрузки каналов из БД:', error);
@@ -483,10 +539,11 @@ export class TelegramUserbot {
   private async getOrCreateChannelId(chatEntity: any): Promise<number> {
     try {
       const telegramChannelId = chatEntity.id.toJSNumber();
-      
+
       // Пытаемся найти существующий канал
-      const existingChannel = await channelDAO.getByTelegramId(telegramChannelId);
-      
+      const existingChannel =
+        await channelDAO.getByTelegramId(telegramChannelId);
+
       if (existingChannel.success && existingChannel.data) {
         return existingChannel.data.channel_id;
       }
