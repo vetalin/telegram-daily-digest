@@ -1,0 +1,11 @@
+# Task ID: 14
+# Title: Deploy Application Using Docker
+# Status: pending
+# Dependencies: 13
+# Priority: medium
+# Description: Containerize the application and deploy it using Docker.
+# Details:
+Create Dockerfiles for the Node.js backend and Python userbot. Set up Docker Compose to manage multi-container deployment.
+
+# Test Strategy:
+Deploy the application locally using Docker and verify that all services are running correctly and can communicate with each other.

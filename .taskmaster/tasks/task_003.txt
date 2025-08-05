@@ -1,0 +1,43 @@
+# Task ID: 3
+# Title: Design Database Schema
+# Status: done
+# Dependencies: 2
+# Priority: high
+# Description: Create the database schema for user profiles, channels, messages, digests, and notifications.
+# Details:
+Use PostgreSQL to design tables for Users, Channels, Messages, Digests, and Notifications. Define relationships between tables and set up primary and foreign keys.
+
+# Test Strategy:
+Run SQL scripts to create the schema and verify that tables are created correctly with the expected structure.
+
+# Subtasks:
+## 1. Define Users Table [done]
+### Dependencies: None
+### Description: Create the Users table to store user profile information.
+### Details:
+Include fields such as user_id, username, email, and created_at. Set user_id as the primary key.
+
+## 2. Define Channels Table [done]
+### Dependencies: None
+### Description: Create the Channels table to store channel information.
+### Details:
+Include fields such as channel_id, channel_name, and created_at. Set channel_id as the primary key.
+
+## 3. Define Messages Table [done]
+### Dependencies: None
+### Description: Create the Messages table to store messages sent in channels.
+### Details:
+Include fields such as message_id, channel_id, user_id, content, and created_at. Set message_id as the primary key and establish foreign keys for channel_id and user_id.
+
+## 4. Define Digests Table [done]
+### Dependencies: None
+### Description: Create the Digests table to store daily summaries of messages.
+### Details:
+Include fields such as digest_id, date, summary, and created_at. Set digest_id as the primary key.
+
+## 5. Define Notifications Table [done]
+### Dependencies: None
+### Description: Create the Notifications table to store user notification preferences.
+### Details:
+Include fields such as notification_id, user_id, message_id, and status. Set notification_id as the primary key and establish a foreign key for user_id.
+

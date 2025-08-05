@@ -201,8 +201,63 @@
         "dependencies": [
           3
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Создать валидацию пользовательских данных",
+            "description": "Реализовать функции валидации для входных данных пользователя при регистрации",
+            "details": "Создать utility функции для проверки telegram_id, username, настроек пользователя. Использовать библиотеки типа joi или yup для валидации схем.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 4
+          },
+          {
+            "id": 2,
+            "title": "Создать API endpoint для регистрации пользователя",
+            "description": "Реализовать POST /api/users/register endpoint",
+            "details": "Создать endpoint, который принимает данные пользователя, валидирует их и сохраняет в базу данных. Возвращает токен или подтверждение регистрации.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 4
+          },
+          {
+            "id": 3,
+            "title": "Реализовать сервис для работы с пользователями",
+            "description": "Создать UserService с методами создания, обновления и получения пользователей",
+            "details": "Создать сервисный слой для инкапсуляции бизнес-логики работы с пользователями. Включить методы: createUser, updateUser, getUserById, getUserByTelegramId.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 4
+          },
+          {
+            "id": 4,
+            "title": "Добавить API endpoint для обновления профиля",
+            "description": "Реализовать PUT/PATCH /api/users/profile endpoint для обновления данных пользователя",
+            "details": "Создать endpoint для обновления настроек пользователя: предпочтения уведомлений, часовой пояс, язык интерфейса и другие параметры.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 4
+          },
+          {
+            "id": 5,
+            "title": "Добавить обработку ошибок и логирование",
+            "description": "Реализовать правильную обработку ошибок для всех операций с пользователями",
+            "details": "Добавить try-catch блоки, правильные HTTP статус коды, логирование операций и ошибок. Создать middleware для обработки ошибок.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 4
+          },
+          {
+            "id": 6,
+            "title": "Написать тесты для API endpoints",
+            "description": "Создать unit и integration тесты для всех endpoints и сервисов",
+            "details": "Написать тесты с использованием Jest: тестирование валидации, успешных операций, обработки ошибок, граничных случаев.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 4
+          }
+        ]
       },
       {
         "id": 5,
@@ -378,7 +433,7 @@
     ],
     "metadata": {
       "created": "2025-08-05T16:07:00.575Z",
-      "updated": "2025-08-05T16:27:12.291Z",
+      "updated": "2025-08-05T17:16:53.715Z",
       "description": "Tasks for master context"
     }
   }

@@ -1,0 +1,11 @@
+# Task ID: 6
+# Title: Monitor Channels for New Messages
+# Status: pending
+# Dependencies: 5
+# Priority: high
+# Description: Implement functionality to monitor specified channels for new messages.
+# Details:
+Use Telethon's event handlers to listen for new messages in the monitored channels. Store incoming messages in the database.
+
+# Test Strategy:
+Simulate incoming messages in the monitored channels and verify that they are correctly stored in the database.

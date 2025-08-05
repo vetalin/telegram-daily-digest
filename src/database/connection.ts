@@ -3,7 +3,7 @@
  */
 
 import { Pool, PoolConfig, QueryResult } from 'pg';
-import { logger } from '../utils/logger';
+import logger from '../utils/logger';
 
 export interface DatabaseConfig {
   host: string;

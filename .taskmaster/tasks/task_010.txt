@@ -1,0 +1,11 @@
+# Task ID: 10
+# Title: Generate Daily Digests
+# Status: pending
+# Dependencies: 9
+# Priority: high
+# Description: Implement functionality to create structured daily digests of news.
+# Details:
+Create a scheduled task to compile and summarize news from the day, grouping by themes and ranking by importance. Store the generated digests in the database.
+
+# Test Strategy:
+Test the digest generation process with sample data to ensure that summaries are accurate and well-structured.

@@ -1,0 +1,11 @@
+# Task ID: 8
+# Title: Implement AI Analysis for Content Categorization
+# Status: pending
+# Dependencies: 7
+# Priority: high
+# Description: Develop AI-based analysis for categorizing content and determining importance.
+# Details:
+Integrate OpenAI API or local models to analyze messages for themes, importance, and relevance to user interests. Implement a scoring system for news importance.
+
+# Test Strategy:
+Run test cases with sample messages to validate the categorization and scoring accuracy.

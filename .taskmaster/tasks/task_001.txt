@@ -1,0 +1,49 @@
+# Task ID: 1
+# Title: Setup Project Repository
+# Status: done
+# Dependencies: None
+# Priority: high
+# Description: Initialize the project repository for the Telegram Daily Digest Bot.
+# Details:
+Create a new Git repository on GitHub or GitLab. Initialize the repository with a README file and set up a .gitignore file for Node.js and Python. Include instructions for cloning the repository in the README.
+
+# Test Strategy:
+Verify that the repository is accessible and that the README contains the correct setup instructions.
+
+# Subtasks:
+## 1. Create Git Repository [done]
+### Dependencies: None
+### Description: Create a new Git repository on GitHub or GitLab for the project.
+### Details:
+Set up a new repository named 'Telegram Daily Digest Bot' on GitHub or GitLab.
+
+## 2. Initialize README File [done]
+### Dependencies: None
+### Description: Create and initialize a README file for the project repository.
+### Details:
+Include project title, description, and instructions for cloning the repository.
+
+## 3. Set Up .gitignore File [done]
+### Dependencies: None
+### Description: Create a .gitignore file for Node.js and Python.
+### Details:
+Ensure that the .gitignore file excludes unnecessary files for both Node.js and Python environments.
+
+## 4. Prepare Project Structure [done]
+### Dependencies: None
+### Description: Set up the initial file structure for the Node.js/TypeScript project.
+### Details:
+Create directories for source code, configuration, and tests, and add necessary placeholder files.
+
+## 5. Create package.json File [done]
+### Dependencies: None
+### Description: Initialize a package.json file for managing Node.js dependencies.
+### Details:
+Use npm to create a package.json file and include necessary scripts for building and running the project.
+
+## 6. Document Cloning Instructions [done]
+### Dependencies: None
+### Description: Add instructions for cloning the repository to the README file.
+### Details:
+Provide clear steps on how to clone the repository using Git.
+
