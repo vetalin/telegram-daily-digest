@@ -576,8 +576,45 @@
         "dependencies": [
           12
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Choose and integrate a logging library.",
+            "description": "I will use winston as it is a popular and flexible library.",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 13
+          },
+          {
+            "id": 2,
+            "title": "Set up different logging levels.",
+            "description": "(info, warn, error)",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 13
+          },
+          {
+            "id": 3,
+            "title": "Identify key events for logging.",
+            "description": "(e.g. bot start, message received, errors).",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 13
+          },
+          {
+            "id": 4,
+            "title": "Implement error logging.",
+            "description": "",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 13
+          }
+        ]
       },
       {
         "id": 14,
@@ -608,7 +645,7 @@
     ],
     "metadata": {
       "created": "2025-08-05T16:07:00.575Z",
-      "updated": "2025-08-05T19:25:04.819Z",
+      "updated": "2025-08-06T08:44:53.714Z",
       "description": "Tasks for master context"
     }
   }

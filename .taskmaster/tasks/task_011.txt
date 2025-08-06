@@ -1,6 +1,6 @@
 # Task ID: 11
 # Title: Develop User Interface for Bot Commands
-# Status: pending
+# Status: done
 # Dependencies: 4
 # Priority: medium
 # Description: Create an intuitive user interface for interacting with the bot.
@@ -11,37 +11,37 @@ Implement inline keyboards and command handling in the bot to allow users to man
 Test the user interface by simulating user interactions and verifying that commands are processed correctly.
 
 # Subtasks:
-## 1. Implement /start command handler [pending]
+## 1. Implement /start command handler [done]
 ### Dependencies: None
 ### Description: Implement a welcome message and the main menu for the /start command.
 ### Details:
 
 
-## 2. Implement /help command handler [pending]
+## 2. Implement /help command handler [done]
 ### Dependencies: None
 ### Description: Implement a help message with available commands.
 ### Details:
 
 
-## 3. Implement main menu with inline keyboard [pending]
+## 3. Implement main menu with inline keyboard [done]
 ### Dependencies: None
 ### Description: Implement the main menu with inline buttons: 'Subscribe to channel', 'My subscriptions', 'Settings'.
 ### Details:
 
 
-## 4. Implement channel subscription functionality [pending]
+## 4. Implement channel subscription functionality [done]
 ### Dependencies: None
 ### Description: Handle channel URL, validate and save the subscription.
 ### Details:
 
 
-## 5. Implement viewing subscription list [pending]
+## 5. Implement viewing subscription list [done]
 ### Dependencies: None
 ### Description: Display a list of channels the user is subscribed to.
 ### Details:
 
 
-## 6. Implement channel unsubscription [pending]
+## 6. Implement channel unsubscription [done]
 ### Dependencies: None
 ### Description: Implement the ability to unsubscribe from a channel.
 ### Details:

@@ -3,7 +3,7 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import throttle from 'express-throttle';
-import { createLogger } from './utils/logger';
+import logger from './utils/logger';
 import userRoutes from './routes/users';
 import {
   requestLogger,
@@ -17,7 +17,6 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const logger = createLogger('Main');
 
 // Security middleware
 app.use(helmet());

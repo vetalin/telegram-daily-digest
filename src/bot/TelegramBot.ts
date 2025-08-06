@@ -3,8 +3,9 @@
  */
 
 import TelegramBot from 'node-telegram-bot-api';
-import { createLogger } from '../utils/logger';
-import { Logger } from 'winston';
+import logger from '../utils/logger';
+import winston from 'winston';
+
 import { User, Notification } from '../database/models';
 import { channelService, ChannelService } from '../services/ChannelService';
 
@@ -38,14 +39,14 @@ export interface SendResult {
 
 export class TelegramBotService {
   private bot: TelegramBot;
-  private logger: Logger;
+  private logger: winston.Logger;
   private config: BotConfig;
   private isInitialized: boolean = false;
   private chatStates: Map<number, ChatState> = new Map();
   private channelService: ChannelService;
 
   constructor(botConfig?: BotConfig) {
-    this.logger = createLogger('TelegramBot');
+    this.logger = logger.child({ service: 'TelegramBot' });
     this.channelService = channelService;
 
     if (botConfig) {

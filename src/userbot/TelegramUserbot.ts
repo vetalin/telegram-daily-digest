@@ -1,8 +1,8 @@
 import { TelegramApi } from 'telegram';
 import { StringSession } from 'telegram/sessions';
 import { NewMessage } from 'telegram/events';
-import { Logger } from 'winston';
-import { createLogger } from '../utils/logger';
+import winston from 'winston';
+import logger from '../utils/logger';
 import { SessionManager } from './SessionManager';
 import { channelDAO, messageDAO } from '../database/dao';
 import { CreateMessageData, MediaType } from '../database/models';
@@ -36,7 +36,7 @@ export interface TelegramMessage {
 
 export class TelegramUserbot {
   private client: TelegramApi;
-  private logger: Logger;
+  private logger: winston.Logger;
   private config: UserbotConfig;
   private isConnected: boolean = false;
   private sessionManager: SessionManager;
@@ -49,7 +49,7 @@ export class TelegramUserbot {
     notificationService?: NotificationService,
   ) {
     this.config = config;
-    this.logger = createLogger('TelegramUserbot');
+    this.logger = logger.child({ service: 'TelegramUserbot' });
     this.sessionManager = new SessionManager(
       config.sessionPath || './sessions',
     );
@@ -107,7 +107,7 @@ export class TelegramUserbot {
       });
       this.logger.info(`Сессия сохранена: ${this.config.sessionName}`);
     } catch (error) {
-      this.logger.error('Ошибка сохранения сессии:', error);
+      this.logger.error('Ошибка сохранения сессии:', { error });
       throw error;
     }
   }
@@ -151,7 +151,7 @@ export class TelegramUserbot {
           );
         },
         onError: (err) => {
-          this.logger.error('Ошибка аутентификации:', err);
+          this.logger.error('Ошибка аутентификации:', { error: err });
           throw err;
         },
       });
@@ -171,7 +171,7 @@ export class TelegramUserbot {
       // Загружаем мониторимые каналы из БД
       await this.loadMonitoredChannelsFromDB();
     } catch (error) {
-      this.logger.error('Ошибка подключения к Telegram API:', error);
+      this.logger.error('Ошибка подключения к Telegram API:', { error });
       this.isConnected = false;
       throw error;
     }
@@ -193,7 +193,7 @@ export class TelegramUserbot {
         this.logger.info('Отключен от Telegram API');
       }
     } catch (error) {
-      this.logger.error('Ошибка отключения:', error);
+      this.logger.error('Ошибка отключения:', { error });
       throw error;
     }
   }
@@ -250,7 +250,7 @@ export class TelegramUserbot {
       this.logger.info(`Найдено ${channels.length} каналов/групп`);
       return channels;
     } catch (error) {
-      this.logger.error('Ошибка получения каналов:', error);
+      this.logger.error('Ошибка получения каналов:', { error });
       throw error;
     }
   }
@@ -270,7 +270,7 @@ export class TelegramUserbot {
       await this.sessionManager.deleteSession(this.config.sessionName);
       this.logger.info(`Сессия ${this.config.sessionName} удалена`);
     } catch (error) {
-      this.logger.error('Ошибка удаления сессии:', error);
+      this.logger.error('Ошибка удаления сессии:', { error });
       throw error;
     }
   }
@@ -305,7 +305,7 @@ export class TelegramUserbot {
       this.isMonitoring = true;
       this.logger.info('✅ Мониторинг каналов запущен');
     } catch (error) {
-      this.logger.error('Ошибка запуска мониторинга:', error);
+      this.logger.error('Ошибка запуска мониторинга:', { error });
       throw error;
     }
   }
@@ -329,7 +329,7 @@ export class TelegramUserbot {
       this.isMonitoring = false;
       this.logger.info('⏹️ Мониторинг каналов остановлен');
     } catch (error) {
-      this.logger.error('Ошибка остановки мониторинга:', error);
+      this.logger.error('Ошибка остановки мониторинга:', { error });
       throw error;
     }
   }
@@ -408,10 +408,9 @@ export class TelegramUserbot {
         }
 
         if (!updateResult.success) {
-          this.logger.error(
-            'Ошибка обновления статуса фильтрации:',
-            updateResult.error,
-          );
+          this.logger.error('Ошибка обновления статуса фильтрации:', {
+            error: updateResult.error,
+          });
         }
 
         // Если сообщение прошло фильтрацию, запускаем ИИ анализ
@@ -490,10 +489,12 @@ export class TelegramUserbot {
           }
         }
       } else {
-        this.logger.error('Ошибка сохранения сообщения:', result.error);
+        this.logger.error('Ошибка сохранения сообщения:', {
+          error: result.error,
+        });
       }
     } catch (error) {
-      this.logger.error('Ошибка обработки нового сообщения:', error);
+      this.logger.error('Ошибка обработки нового сообщения:', { error });
     }
   }
 
@@ -536,7 +537,7 @@ export class TelegramUserbot {
     } catch (error) {
       this.logger.error(
         `Ошибка добавления канала в мониторинг: ${channelIdentifier}`,
-        error,
+        { error },
       );
       throw error;
     }
@@ -558,7 +559,7 @@ export class TelegramUserbot {
     } catch (error) {
       this.logger.error(
         `Ошибка удаления канала из мониторинга: ${channelIdentifier}`,
-        error,
+        { error },
       );
       throw error;
     }
@@ -597,7 +598,7 @@ export class TelegramUserbot {
         );
       }
     } catch (error) {
-      this.logger.error('Ошибка загрузки каналов из БД:', error);
+      this.logger.error('Ошибка загрузки каналов из БД:', { error });
     }
   }
 
@@ -629,7 +630,7 @@ export class TelegramUserbot {
       }
       return undefined;
     } catch (error) {
-      this.logger.error('Ошибка получения URL медиафайла:', error);
+      this.logger.error('Ошибка получения URL медиафайла:', { error });
       return undefined;
     }
   }
@@ -663,7 +664,7 @@ export class TelegramUserbot {
 
       throw new Error('Не удалось создать канал в БД');
     } catch (error) {
-      this.logger.error('Ошибка получения/создания ID канала:', error);
+      this.logger.error('Ошибка получения/создания ID канала:', { error });
       throw error;
     }
   }
