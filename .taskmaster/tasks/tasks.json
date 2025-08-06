@@ -639,13 +639,68 @@
         "dependencies": [
           11
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define testing goals and metrics.",
+            "description": "What exactly do we want to find out and how will we measure success?",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 15
+          },
+          {
+            "id": 2,
+            "title": "Prepare test scenarios and questionnaires.",
+            "description": "What specific tasks will users perform and what questions will we ask them?",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 15
+          },
+          {
+            "id": 3,
+            "title": "Find and select test participants.",
+            "description": "Who will we invite and how?",
+            "details": "",
+            "status": "in-progress",
+            "dependencies": [],
+            "parentTaskId": 15
+          },
+          {
+            "id": 4,
+            "title": "Conduct testing sessions.",
+            "description": "Schedule and conduct meetings with users.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 15
+          },
+          {
+            "id": 5,
+            "title": "Systematize and analyze the collected feedback.",
+            "description": "Bring all data into a single format and identify key insights.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 15
+          },
+          {
+            "id": 6,
+            "title": "Form a list of improvements based on the results.",
+            "description": "Create a concrete action plan for product improvement.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 15
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-08-05T16:07:00.575Z",
-      "updated": "2025-08-06T09:08:11.219Z",
+      "updated": "2025-08-06T09:32:53.268Z",
       "description": "Tasks for master context"
     }
   }

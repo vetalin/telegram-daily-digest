@@ -1,6 +1,6 @@
 # Task ID: 13
 # Title: Set Up Monitoring and Logging
-# Status: pending
+# Status: done
 # Dependencies: 12
 # Priority: medium
 # Description: Implement logging and performance metrics for the bot.
@@ -11,25 +11,25 @@ Use a logging library to capture events and errors. Set up performance metrics t
 Test the logging functionality by generating various events and verifying that they are logged correctly.
 
 # Subtasks:
-## 1. Choose and integrate a logging library. [pending]
+## 1. Choose and integrate a logging library. [done]
 ### Dependencies: None
 ### Description: I will use winston as it is a popular and flexible library.
 ### Details:
 
 
-## 2. Set up different logging levels. [pending]
+## 2. Set up different logging levels. [done]
 ### Dependencies: None
 ### Description: (info, warn, error)
 ### Details:
 
 
-## 3. Identify key events for logging. [pending]
+## 3. Identify key events for logging. [done]
 ### Dependencies: None
 ### Description: (e.g. bot start, message received, errors).
 ### Details:
 
 
-## 4. Implement error logging. [pending]
+## 4. Implement error logging. [done]
 ### Dependencies: None
 ### Description: 
 ### Details:

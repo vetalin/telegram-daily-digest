@@ -1,6 +1,6 @@
 # Task ID: 14
 # Title: Deploy Application Using Docker
-# Status: pending
+# Status: done
 # Dependencies: 13
 # Priority: medium
 # Description: Containerize the application and deploy it using Docker.

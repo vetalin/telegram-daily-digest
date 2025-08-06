@@ -9,3 +9,41 @@ Conduct user testing sessions with target audience members. Collect feedback on 
 
 # Test Strategy:
 Analyze user feedback and identify areas for improvement based on user experiences.
+
+# Subtasks:
+## 1. Define testing goals and metrics. [pending]
+### Dependencies: None
+### Description: What exactly do we want to find out and how will we measure success?
+### Details:
+
+
+## 2. Prepare test scenarios and questionnaires. [pending]
+### Dependencies: None
+### Description: What specific tasks will users perform and what questions will we ask them?
+### Details:
+
+
+## 3. Find and select test participants. [pending]
+### Dependencies: None
+### Description: Who will we invite and how?
+### Details:
+
+
+## 4. Conduct testing sessions. [pending]
+### Dependencies: None
+### Description: Schedule and conduct meetings with users.
+### Details:
+
+
+## 5. Systematize and analyze the collected feedback. [pending]
+### Dependencies: None
+### Description: Bring all data into a single format and identify key insights.
+### Details:
+
+
+## 6. Form a list of improvements based on the results. [pending]
+### Dependencies: None
+### Description: Create a concrete action plan for product improvement.
+### Details:
+
+
