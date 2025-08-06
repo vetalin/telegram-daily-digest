@@ -1,0 +1,35 @@
+# Stage 1: Build the application
+FROM node:18-alpine AS builder
+
+WORKDIR /usr/src/app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Stage 2: Production environment
+FROM node:18-alpine
+
+WORKDIR /usr/src/app
+
+# Create a non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Copy built files and dependencies
+COPY --from=builder /usr/src/app/dist ./dist
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+COPY package*.json ./
+
+# Set ownership and permissions
+RUN chown -R appuser:appgroup /usr/src/app
+USER appuser
+
+# Expose port and start the application
+EXPOSE 3000
+CMD ["node", "dist/index.js"]
