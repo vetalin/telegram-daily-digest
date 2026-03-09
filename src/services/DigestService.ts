@@ -1,177 +1,146 @@
-/**
- * DigestService - сервис для создания и рассылки ежедневных дайджестов
- */
-import cron from 'node-cron';
-import { userService, UserService } from './UserService';
-import { digestDAO, DigestDAO } from '../database/dao/DigestDAO';
-import { Message, User } from '../database/models';
-import { createLogger } from '../utils/logger';
-import { Logger } from 'winston';
-import { NotificationSender } from './NotificationSender';
-import { TelegramBotService } from '../bot/TelegramBot';
+import { prisma } from '@/lib/prisma'
+import { getBot } from '@/lib/bot'
+import { createLogger } from '@/lib/logger'
 
-export class DigestService {
-  private logger: Logger;
-  private userService: UserService;
-  private digestDAO: DigestDAO;
-  private notificationSender: NotificationSender;
+const logger = createLogger('DigestService')
+const MAX_MESSAGE_LENGTH = 4096
 
-  constructor() {
-    this.logger = createLogger('DigestService');
-    this.userService = userService;
-    this.digestDAO = digestDAO;
-
-    // Мы должны инициализировать TelegramBotService, чтобы передать его в NotificationSender
-    const telegramBot = new TelegramBotService();
-    this.notificationSender = new NotificationSender(telegramBot);
-  }
-
-  /**
-   * Запускает ежедневное создание дайджестов
-   */
-  public scheduleDailyDigest(cronTime: string = '0 8 * * *') {
-    // 8:00 AM every day
-    this.logger.info(`Дайджесты будут создаваться ежедневно в ${cronTime}`);
-    cron.schedule(cronTime, () => {
-      this.logger.info('Начинаю создание ежедневных дайджестов...');
-      this.generateDailyDigests().catch((error) => {
-        this.logger.error('Ошибка при создании ежедневных дайджестов:', error);
-      });
-    });
-  }
-
-  /**
-   * Генерирует дайджесты для всех активных пользователей
-   */
-  public async generateDailyDigests(): Promise<void> {
-    const users = await this.userService.getActiveUsers();
-    if (!users.length) {
-      this.logger.info('Нет активных пользователей для создания дайджестов.');
-      return;
-    }
-
-    this.logger.info(
-      `Начинаю генерацию дайджестов для ${users.length} пользователей.`,
-    );
-
-    for (const user of users) {
-      try {
-        await this.generateDigestForUser(user);
-      } catch (error) {
-        this.logger.error(
-          `Ошибка при создании дайджеста для пользователя ${user.user_id}:`,
-          error,
-        );
-      }
-    }
-  }
-
-  /**
-   * Генерирует дайджест для одного пользователя
-   */
-  public async generateDigestForUser(user: User): Promise<void> {
-    const today = new Date();
-    const messagesResult = await this.digestDAO.getMessagesForUserDigest(
-      user.user_id,
-      today,
-    );
-
-    if (
-      !messagesResult.success ||
-      !messagesResult.data ||
-      messagesResult.data.length === 0
-    ) {
-      this.logger.info(
-        `Нет сообщений для дайджеста для пользователя ${user.user_id} за ${today.toDateString()}`,
-      );
-      return;
-    }
-
-    const messages = messagesResult.data;
-    const groupedMessages = this.groupMessagesByCategory(messages);
-    const digestContent = this.formatDigest(groupedMessages);
-    const digestTitle = `Ежедневный дайджест новостей за ${today.toLocaleDateString('ru-RU')}`;
-
-    // Создаем запись в БД
-    const digestResult = await this.digestDAO.create({
-      user_id: user.user_id,
-      digest_date: today,
-      title: digestTitle,
-      content: digestContent,
-      summary: `Дайджест содержит ${messages.length} сообщений.`,
-      message_count: messages.length,
-    });
-
-    if (!digestResult.success || !digestResult.data) {
-      throw new Error('Не удалось создать запись дайджеста в БД');
-    }
-
-    const digestId = digestResult.data.digest_id;
-
-    // Привязываем сообщения к дайджесту
-    for (const message of messages) {
-      await this.digestDAO.addMessageToDigest(digestId, message.message_id);
-    }
-
-    this.logger.info(
-      `Дайджест для пользователя ${user.user_id} успешно создан.`,
-    );
-
-    // Отправляем дайджест пользователю
-    await this.notificationSender.sendNotification({
-      notification_id: 0, // Это поле не используется в sendViaTelegram напрямую
-      user_id: user.user_id,
-      notification_type: 'digest',
-      title: digestTitle,
-      content: digestContent,
-      is_sent: false,
-      created_at: new Date(),
-      updated_at: new Date(),
-    });
-
-    this.logger.info(`Дайджест отправлен пользователю ${user.user_id}.`);
-  }
-
-  /**
-   * Группирует сообщения по категориям
-   */
-  private groupMessagesByCategory(messages: Message[]): Map<string, Message[]> {
-    const grouped = new Map<string, Message[]>();
-    for (const message of messages) {
-      const category = message.category || 'Без категории';
-      if (!grouped.has(category)) {
-        grouped.set(category, []);
-      }
-      grouped.get(category)!.push(message);
-    }
-    return grouped;
-  }
-
-  /**
-   * Форматирует сгруппированные сообщения в текстовый дайджест
-   */
-  private formatDigest(groupedMessages: Map<string, Message[]>): string {
-    let content = '<b>Ваш ежедневный дайджест новостей:</b>\n\n';
-    for (const [category, messages] of groupedMessages.entries()) {
-      content += `<b>${this.escapeHtml(category)}</b>\n`;
-      for (const message of messages) {
-        const title = message.content.substring(0, 100).replace(/\n/g, ' ');
-        // В реальном приложении ссылка должна вести на само сообщение, если это возможно
-        content += `• <i>(${message.importance_score})</i> ${this.escapeHtml(title)}...\n`;
-      }
-      content += '\n';
-    }
-    return content;
-  }
-
-  private escapeHtml(text: string): string {
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
+interface DigestMessage {
+  rank: number
+  category: string
+  channelTitle: string
+  summary: string
+  score: number
+  postedAt: Date
 }
 
-export const digestService = new DigestService();
+function formatDigestText(messages: DigestMessage[], periodStart: Date, periodEnd: Date): string {
+  const dateStr = periodStart.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+  const lines: string[] = [
+    `<b>📰 Дайджест за ${dateStr}</b>`,
+    `<i>Топ ${messages.length} новостей из ваших каналов</i>`,
+    '',
+  ]
+
+  for (const msg of messages) {
+    const time = msg.postedAt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+    lines.push(
+      `<b>${msg.rank}. [${msg.category}]</b> — ${msg.channelTitle}`,
+      msg.summary,
+      `<i>⭐ ${msg.score.toFixed(1)} · ${time}</i>`,
+      '',
+    )
+  }
+
+  return lines.join('\n')
+}
+
+function splitText(text: string, maxLength: number): string[] {
+  if (text.length <= maxLength) return [text]
+
+  const parts: string[] = []
+  let remaining = text
+
+  while (remaining.length > maxLength) {
+    let splitAt = remaining.lastIndexOf('\n\n', maxLength)
+    if (splitAt === -1) splitAt = maxLength
+    parts.push(remaining.slice(0, splitAt))
+    remaining = remaining.slice(splitAt).trimStart()
+  }
+
+  if (remaining.length > 0) parts.push(remaining)
+  return parts
+}
+
+export async function sendDigestForUser(userId: number): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      userChannels: {
+        include: { channel: true },
+      },
+    },
+  })
+
+  if (!user || !user.active) {
+    logger.warn('User not found or inactive', { userId })
+    return
+  }
+
+  const channelIds = user.userChannels.map((uc) => uc.channelId)
+  if (channelIds.length === 0) {
+    logger.info('User has no channels', { userId })
+    return
+  }
+
+  const periodEnd = new Date()
+  const periodStart = new Date(periodEnd.getTime() - 24 * 60 * 60 * 1000)
+
+  const rawMessages = await prisma.message.findMany({
+    where: {
+      channelId: { in: channelIds },
+      postedAt: { gte: periodStart, lte: periodEnd },
+      isFiltered: false,
+      importanceScore: { not: null },
+      isAd: false,
+    },
+    orderBy: { importanceScore: 'desc' },
+    take: 30,
+    include: { channel: true },
+  })
+
+  if (rawMessages.length === 0) {
+    logger.info('No messages for digest', { userId })
+    return
+  }
+
+  const digest = await prisma.digest.create({
+    data: {
+      userId,
+      periodStart,
+      periodEnd,
+      status: 'PENDING',
+    },
+  })
+
+  await prisma.digestMessage.createMany({
+    data: rawMessages.map((msg, i) => ({
+      digestId: digest.id,
+      messageId: msg.id,
+      rank: i + 1,
+    })),
+  })
+
+  const messages: DigestMessage[] = rawMessages.map((msg, i) => ({
+    rank: i + 1,
+    category: msg.category ?? 'other',
+    channelTitle: msg.channel.title,
+    summary: msg.summary ?? msg.text.slice(0, 200),
+    score: msg.importanceScore ?? 0,
+    postedAt: msg.postedAt,
+  }))
+
+  const text = formatDigestText(messages, periodStart, periodEnd)
+  const parts = splitText(text, MAX_MESSAGE_LENGTH)
+  const bot = getBot()
+
+  try {
+    for (const part of parts) {
+      await bot.sendMessage(user.telegramId.toString(), part, { parse_mode: 'HTML' })
+    }
+
+    await prisma.digest.update({
+      where: { id: digest.id },
+      data: { status: 'SENT', sentAt: new Date() },
+    })
+
+    logger.info('Digest sent', { userId, messagesCount: rawMessages.length })
+  } catch (error) {
+    await prisma.digest.update({
+      where: { id: digest.id },
+      data: { status: 'FAILED' },
+    })
+    logger.error('Failed to send digest', { userId, error })
+    throw error
+  }
+}

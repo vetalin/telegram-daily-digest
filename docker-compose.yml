@@ -1,24 +1,57 @@
 version: '3.8'
 
 services:
-  app:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.app
-    ports:
-      - '3000:3000'
+  postgres:
+    image: postgres:16-alpine
     environment:
-      - NODE_ENV=production
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: telegram_digest
     volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  userbot:
+  nextjs:
     build:
       context: .
-      dockerfile: docker/Dockerfile.userbot
+      dockerfile: docker/Dockerfile.nextjs
+    ports:
+      - "3000:3000"
     environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/telegram_digest
+      - BOT_TOKEN=${BOT_TOKEN}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - INTERNAL_SECRET=${INTERNAL_SECRET}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+      - WORKER_URL=http://worker:3001
       - NODE_ENV=production
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.worker
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/telegram_digest
+      - BOT_TOKEN=${BOT_TOKEN}
+      - API_ID=${API_ID}
+      - API_HASH=${API_HASH}
+      - PHONE_NUMBER=${PHONE_NUMBER}
+      - SESSION_STRING=${SESSION_STRING}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - INTERNAL_SECRET=${INTERNAL_SECRET}
+      - NEXTJS_URL=http://nextjs:3000
+      - WORKER_PORT=3001
+      - NODE_ENV=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

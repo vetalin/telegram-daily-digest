@@ -1,0 +1,142 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useTelegramAuth } from '@/hooks/useTelegramAuth'
+import { useApi } from '@/hooks/useApi'
+import type { SettingsResponse } from '@/types/api'
+
+const TIMEZONES = [
+  'UTC',
+  'Europe/Moscow',
+  'Europe/Kiev',
+  'Europe/Minsk',
+  'Asia/Almaty',
+  'Asia/Tashkent',
+  'Asia/Tbilisi',
+  'Europe/London',
+  'Europe/Berlin',
+  'America/New_York',
+  'America/Los_Angeles',
+]
+
+export default function SettingsPage() {
+  const router = useRouter()
+  const { initData, isReady } = useTelegramAuth()
+  const { request } = useApi(initData)
+  const [settings, setSettings] = useState<SettingsResponse | null>(null)
+  const [digestTime, setDigestTime] = useState('08:00')
+  const [timezone, setTimezone] = useState('UTC')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (!isReady || !initData) return
+    request<SettingsResponse>('/api/settings')
+      .then((s) => {
+        setSettings(s)
+        setDigestTime(s.digestTime)
+        setTimezone(s.timezone)
+      })
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [isReady, initData, request])
+
+  async function handleSave() {
+    setSaving(true)
+    setError(null)
+    setSaved(false)
+    try {
+      const updated = await request<SettingsResponse>('/api/settings', {
+        method: 'PATCH',
+        body: JSON.stringify({ digestTime, timezone }),
+      })
+      setSettings(updated)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (e: unknown) {
+      setError((e as Error).message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!isReady || loading) {
+    return <div style={{ padding: 20, textAlign: 'center' }}>Загрузка...</div>
+  }
+
+  return (
+    <div style={{ padding: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+        <button onClick={() => router.back()} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20 }}>
+          ←
+        </button>
+        <h1 style={{ margin: 0, fontSize: 20 }}>Настройки</h1>
+      </div>
+
+      <label style={{ display: 'block', marginBottom: 16 }}>
+        <div style={{ fontWeight: 500, marginBottom: 6 }}>Время дайджеста</div>
+        <input
+          type="time"
+          value={digestTime}
+          onChange={(e) => setDigestTime(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '10px 12px',
+            borderRadius: 8,
+            border: '1px solid var(--tg-theme-hint-color, #ccc)',
+            fontSize: 16,
+            boxSizing: 'border-box',
+            background: 'var(--tg-theme-bg-color, #fff)',
+            color: 'var(--tg-theme-text-color, #000)',
+          }}
+        />
+      </label>
+
+      <label style={{ display: 'block', marginBottom: 24 }}>
+        <div style={{ fontWeight: 500, marginBottom: 6 }}>Часовой пояс</div>
+        <select
+          value={timezone}
+          onChange={(e) => setTimezone(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '10px 12px',
+            borderRadius: 8,
+            border: '1px solid var(--tg-theme-hint-color, #ccc)',
+            fontSize: 16,
+            boxSizing: 'border-box',
+            background: 'var(--tg-theme-bg-color, #fff)',
+            color: 'var(--tg-theme-text-color, #000)',
+          }}
+        >
+          {TIMEZONES.map((tz) => (
+            <option key={tz} value={tz}>{tz}</option>
+          ))}
+        </select>
+      </label>
+
+      {error && <div style={{ marginBottom: 12, color: 'red', fontSize: 14 }}>{error}</div>}
+      {saved && <div style={{ marginBottom: 12, color: 'green', fontSize: 14 }}>✓ Сохранено</div>}
+
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        style={{
+          width: '100%',
+          padding: '12px',
+          background: 'var(--tg-theme-button-color, #2481cc)',
+          color: 'var(--tg-theme-button-text-color, #fff)',
+          border: 'none',
+          borderRadius: 8,
+          fontSize: 16,
+          cursor: saving ? 'wait' : 'pointer',
+          opacity: saving ? 0.6 : 1,
+        }}
+      >
+        {saving ? 'Сохранение...' : 'Сохранить'}
+      </button>
+    </div>
+  )
+}

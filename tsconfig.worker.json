@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "lib": ["esnext"],
+    "skipLibCheck": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": false,
+    "outDir": "dist-worker",
+    "rootDir": ".",
+    "target": "ES2020",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["worker/**/*.ts", "src/lib/**/*.ts", "src/services/**/*.ts", "src/types/**/*.ts"],
+  "exclude": ["node_modules", "src/app", "src/components", "src/hooks"]
+}

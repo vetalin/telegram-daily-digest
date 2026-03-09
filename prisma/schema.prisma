@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  telegramId   BigInt        @unique
+  username     String?
+  firstName    String?
+  digestTime   String        @default("08:00")
+  timezone     String        @default("UTC")
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  userChannels UserChannel[]
+  digests      Digest[]
+}
+
+model Channel {
+  id                Int           @id @default(autoincrement())
+  telegramChannelId BigInt        @unique
+  username          String?       @unique
+  title             String
+  createdAt         DateTime      @default(now())
+  userChannels      UserChannel[]
+  messages          Message[]
+}
+
+model UserChannel {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  channelId Int
+  addedAt   DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channelId])
+}
+
+model Message {
+  id              Int       @id @default(autoincrement())
+  channelId       Int
+  telegramMsgId   Int
+  text            String
+  mediaType       String?
+  postedAt        DateTime
+  isFiltered      Boolean   @default(false)
+  importanceScore Float?
+  category        String?
+  summary         String?
+  isAd            Boolean   @default(false)
+  scoredAt        DateTime?
+  createdAt       DateTime  @default(now())
+  channel         Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  digestMessages  DigestMessage[]
+
+  @@unique([channelId, telegramMsgId])
+  @@index([postedAt])
+  @@index([importanceScore])
+}
+
+model Digest {
+  id          Int           @id @default(autoincrement())
+  userId      Int
+  generatedAt DateTime      @default(now())
+  sentAt      DateTime?
+  periodStart DateTime
+  periodEnd   DateTime
+  status      DigestStatus  @default(PENDING)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages    DigestMessage[]
+}
+
+enum DigestStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model DigestMessage {
+  id        Int     @id @default(autoincrement())
+  digestId  Int
+  messageId Int
+  rank      Int
+  digest    Digest  @relation(fields: [digestId], references: [id], onDelete: Cascade)
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([digestId, messageId])
+}

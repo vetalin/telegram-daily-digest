@@ -1,0 +1,22 @@
+FROM node:20-alpine AS base
+WORKDIR /app
+RUN apk add --no-cache libc6-compat
+
+FROM base AS deps
+COPY package*.json ./
+COPY prisma ./prisma/
+RUN npm ci
+
+FROM base AS runner
+ENV NODE_ENV=production
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/prisma ./prisma
+COPY src ./src
+COPY worker ./worker
+COPY tsconfig.json ./
+COPY tsconfig.worker.json ./
+
+RUN npx prisma generate
+
+EXPOSE 3001
+CMD ["npx", "tsx", "worker/index.ts"]
