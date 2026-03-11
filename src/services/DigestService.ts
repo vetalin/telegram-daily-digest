@@ -13,6 +13,16 @@ interface DigestMessage {
   summary: string
   score: number
   postedAt: Date
+  messageLink: string
+}
+
+function buildMessageLink(channel: { username: string | null; telegramChannelId: bigint }, telegramMsgId: number): string {
+  if (channel.username) {
+    return `https://t.me/${channel.username}/${telegramMsgId}`
+  }
+  // Private channel: strip -100 prefix from channel ID
+  const numericId = channel.telegramChannelId.toString().replace(/^-100/, '')
+  return `https://t.me/c/${numericId}/${telegramMsgId}`
 }
 
 function formatDigestText(messages: DigestMessage[], periodStart: Date, periodEnd: Date): string {
@@ -28,7 +38,7 @@ function formatDigestText(messages: DigestMessage[], periodStart: Date, periodEn
     lines.push(
       `<b>${msg.rank}. [${msg.category}]</b> — ${msg.channelTitle}`,
       msg.summary,
-      `<i>⭐ ${msg.score.toFixed(1)} · ${time}</i>`,
+      `<i>⭐ ${msg.score.toFixed(1)} · ${time}</i> · <a href="${msg.messageLink}">оригинал</a>`,
       '',
     )
   }
@@ -119,6 +129,7 @@ export async function sendDigestForUser(userId: number): Promise<void> {
     summary: msg.summary ?? msg.text.slice(0, 200),
     score: msg.importanceScore ?? 0,
     postedAt: msg.postedAt,
+    messageLink: buildMessageLink(msg.channel, msg.telegramMsgId),
   }))
 
   const text = formatDigestText(messages, periodStart, periodEnd)
