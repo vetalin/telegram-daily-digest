@@ -1,6 +1,7 @@
 import http from 'http'
 import { PrismaClient } from '@prisma/client'
-import { initUserbot, resolveChannel, loadMonitoredChannels } from './TelegramUserbot'
+import { initUserbot, resolveChannel, loadMonitoredChannels, fetchChannelHistory } from './TelegramUserbot'
+import { processPipelineMessage } from './MessagePipeline'
 import { startDigestCron } from './DigestCron'
 import { createLogger } from '../src/lib/logger'
 
@@ -41,6 +42,75 @@ function createHttpServer(): http.Server {
           res.end(JSON.stringify({ id: result.id.toString(), title: result.title, username: result.username }))
         } catch (error) {
           logger.error('resolve-channel failed', { error })
+          res.writeHead(500, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: (error as Error).message }))
+        }
+      })
+      return
+    }
+
+    if (req.method === 'POST' && req.url === '/internal/backfill') {
+      let body = ''
+      req.on('data', (chunk) => (body += chunk))
+      req.on('end', async () => {
+        try {
+          const { channelTelegramIds, sinceHours = 24 } = JSON.parse(body) as {
+            channelTelegramIds: string[]
+            sinceHours?: number
+          }
+          const sinceDate = new Date(Date.now() - sinceHours * 3600 * 1000)
+
+          const allMessages = (
+            await Promise.all(
+              channelTelegramIds.map((id) =>
+                fetchChannelHistory(BigInt(id), sinceDate).catch((e) => {
+                  logger.warn('fetchChannelHistory failed', { id, error: e.message })
+                  return []
+                })
+              )
+            )
+          ).flat()
+
+          const channelBigInts = channelTelegramIds.map(BigInt)
+          const channelRows = await prisma.channel.findMany({
+            where: { telegramChannelId: { in: channelBigInts } },
+            select: { id: true, telegramChannelId: true },
+          })
+          const channelIdMap = new Map(channelRows.map((c) => [c.telegramChannelId.toString(), c.id]))
+
+          const telegramMsgIds = allMessages.map((m) => m.telegramMsgId)
+          const scored = await prisma.message.findMany({
+            where: {
+              channelId: { in: channelRows.map((c) => c.id) },
+              telegramMsgId: { in: telegramMsgIds },
+              importanceScore: { not: null },
+            },
+            select: { channelId: true, telegramMsgId: true },
+          })
+          const scoredKeys = new Set(scored.map((m) => `${m.channelId}_${m.telegramMsgId}`))
+
+          const toScore = allMessages.filter((m) => {
+            const channelId = channelIdMap.get(m.channelTelegramId.toString())
+            return channelId !== undefined && !scoredKeys.has(`${channelId}_${m.telegramMsgId}`)
+          })
+
+          const CONCURRENCY = 5
+          let processed = 0, errors = 0
+          for (let i = 0; i < toScore.length; i += CONCURRENCY) {
+            const batch = toScore.slice(i, i + CONCURRENCY)
+            const results = await Promise.allSettled(batch.map((msg) => processPipelineMessage(msg)))
+            results.forEach((r) => {
+              if (r.status === 'fulfilled') processed++
+              else errors++
+            })
+          }
+
+          const skipped = allMessages.length - toScore.length
+          logger.info('Backfill completed', { total: allMessages.length, processed, skipped, errors })
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ processed, skipped, errors }))
+        } catch (error) {
+          logger.error('backfill failed', { error })
           res.writeHead(500, { 'Content-Type': 'application/json' })
           res.end(JSON.stringify({ error: (error as Error).message }))
         }

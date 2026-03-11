@@ -1,7 +1,8 @@
 import { TelegramClient, sessions } from 'telegram'
+import { Api } from 'telegram'
 import { NewMessage, NewMessageEvent } from 'telegram/events'
 import { createLogger } from '../src/lib/logger'
-import { processPipelineMessage } from './MessagePipeline'
+import { processPipelineMessage, RawMessage } from './MessagePipeline'
 
 const logger = createLogger('TelegramUserbot')
 
@@ -84,4 +85,38 @@ export async function loadMonitoredChannels(channelIds: string[]): Promise<void>
     monitoredChannelIds.add(id)
   }
   logger.info('Loaded monitored channels', { count: channelIds.length })
+}
+
+export async function fetchChannelHistory(
+  channelTelegramId: bigint,
+  sinceDate: Date,
+  limit = 200
+): Promise<RawMessage[]> {
+  if (!client) throw new Error('Userbot not initialized')
+
+  const rawId = channelTelegramId.toString().replace(/^-100/, '')
+  const entity = await client.getEntity(BigInt(rawId))
+
+  const messages = await client.getMessages(entity, { limit })
+
+  const result: RawMessage[] = []
+  for (const msg of messages) {
+    if (!(msg instanceof Api.Message)) continue
+    if (!msg.message || msg.message.trim().length === 0) continue
+    const postedAt = new Date(msg.date * 1000)
+    if (postedAt < sinceDate) continue
+    result.push({
+      channelTelegramId,
+      telegramMsgId: msg.id,
+      text: msg.message,
+      postedAt,
+    })
+  }
+
+  logger.info('Fetched channel history', {
+    channelTelegramId: channelTelegramId.toString(),
+    total: messages.length,
+    inRange: result.length,
+  })
+  return result
 }
