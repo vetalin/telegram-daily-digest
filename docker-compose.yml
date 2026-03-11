@@ -10,7 +10,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U digelegram"]
+      test: ["CMD-SHELL", "pg_isready -U digelegram -d telegram_digest"]
       interval: 5s
       timeout: 5s
       retries: 5
