@@ -44,7 +44,7 @@ export interface DigestSummaryInput {
   score: number
 }
 
-export async function generateDigestSummary(messages: DigestSummaryInput[]): Promise<string> {
+export async function generateDigestSummary(messages: DigestSummaryInput[], customPrompt?: string): Promise<string> {
   let client
   try {
     client = getOpenRouterClient()
@@ -57,12 +57,16 @@ export async function generateDigestSummary(messages: DigestSummaryInput[]): Pro
     .map((m, i) => `${i + 1}. [${m.category}] ${m.channelTitle}: ${m.summary} (важность: ${m.score.toFixed(1)})`)
     .join('\n')
 
+  const systemPrompt = customPrompt
+    ? `${DIGEST_SUMMARY_PROMPT}\n\nДополнительные инструкции: ${customPrompt}`
+    : DIGEST_SUMMARY_PROMPT
+
   let completion
   try {
     completion = await client.chat.completions.create({
       model: 'google/gemini-3-flash-preview',
       messages: [
-        { role: 'system', content: DIGEST_SUMMARY_PROMPT },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: `Новости дня:\n${newsBlock}` },
       ],
     })

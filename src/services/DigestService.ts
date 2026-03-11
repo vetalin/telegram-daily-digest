@@ -25,11 +25,15 @@ function buildMessageLink(channel: { username: string | null; telegramChannelId:
   return `https://t.me/c/${numericId}/${telegramMsgId}`
 }
 
-function formatDigestText(messages: DigestMessage[], periodStart: Date, periodEnd: Date): string {
+function formatDigestText(messages: DigestMessage[], periodStart: Date, groupName?: string): string {
   const dateStr = periodStart.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+  const heading = groupName
+    ? `<b>📂 ${groupName} — Дайджест за ${dateStr}</b>`
+    : `<b>📰 Дайджест за ${dateStr}</b>`
+
   const lines: string[] = [
-    `<b>📰 Дайджест за ${dateStr}</b>`,
-    `<i>Топ ${messages.length} новостей из ваших каналов</i>`,
+    heading,
+    `<i>Топ ${messages.length} новостей${groupName ? ` из группы «${groupName}»` : ' из ваших каналов'}</i>`,
     '',
   ]
 
@@ -63,29 +67,17 @@ function splitText(text: string, maxLength: number): string[] {
   return parts
 }
 
-export async function sendDigestForUser(userId: number): Promise<void> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: {
-      userChannels: {
-        include: { channel: true },
-      },
-    },
-  })
-
-  if (!user || !user.active) {
-    logger.warn('User not found or inactive', { userId })
-    throw new Error('Пользователь не найден или неактивен')
-  }
-
-  const channelIds = user.userChannels.map((uc) => uc.channelId)
-  if (channelIds.length === 0) {
-    logger.info('User has no channels', { userId })
-    throw new Error('У вас нет подключённых каналов')
-  }
-
-  const periodEnd = new Date()
-  const periodStart = new Date(periodEnd.getTime() - 24 * 60 * 60 * 1000)
+async function sendDigestGroup(
+  userId: number,
+  telegramId: string,
+  channelIds: number[],
+  periodStart: Date,
+  periodEnd: Date,
+  groupId?: number,
+  groupName?: string,
+  aiPrompt?: string,
+): Promise<void> {
+  const bot = getBot()
 
   const rawMessages = await prisma.message.findMany({
     where: {
@@ -101,8 +93,8 @@ export async function sendDigestForUser(userId: number): Promise<void> {
   })
 
   if (rawMessages.length === 0) {
-    logger.info('No messages for digest', { userId })
-    throw new Error('За последние 24 часа нет оценённых сообщений для дайджеста')
+    logger.info('No messages for digest group', { userId, groupName })
+    return
   }
 
   const digest = await prisma.digest.create({
@@ -111,6 +103,8 @@ export async function sendDigestForUser(userId: number): Promise<void> {
       periodStart,
       periodEnd,
       status: 'PENDING',
+      groupId: groupId ?? null,
+      groupName: groupName ?? null,
     },
   })
 
@@ -132,27 +126,27 @@ export async function sendDigestForUser(userId: number): Promise<void> {
     messageLink: buildMessageLink(msg.channel, msg.telegramMsgId),
   }))
 
-  const text = formatDigestText(messages, periodStart, periodEnd)
+  const text = formatDigestText(messages, periodStart, groupName)
   const parts = splitText(text, MAX_MESSAGE_LENGTH)
-  const bot = getBot()
 
   let summaryText: string | null = null
   try {
-    summaryText = await generateDigestSummary(messages)
+    summaryText = await generateDigestSummary(messages, aiPrompt)
   } catch (err) {
-    logger.warn('Failed to generate digest summary, skipping', { userId, error: err })
+    logger.warn('Failed to generate digest summary, skipping', { userId, groupName, error: err })
   }
 
   try {
     for (const part of parts) {
-      await bot.sendMessage(user.telegramId.toString(), part, { parse_mode: 'HTML' })
+      await bot.sendMessage(telegramId, part, { parse_mode: 'HTML' })
     }
 
     if (summaryText) {
-      const summaryMessage = `<b>🧠 Аналитика дня</b>\n\n${summaryText}`
+      const label = groupName ? `🧠 Аналитика: ${groupName}` : '🧠 Аналитика дня'
+      const summaryMessage = `<b>${label}</b>\n\n${summaryText}`
       const summaryParts = splitText(summaryMessage, MAX_MESSAGE_LENGTH)
       for (const part of summaryParts) {
-        await bot.sendMessage(user.telegramId.toString(), part, { parse_mode: 'HTML' })
+        await bot.sendMessage(telegramId, part, { parse_mode: 'HTML' })
       }
     }
 
@@ -161,13 +155,83 @@ export async function sendDigestForUser(userId: number): Promise<void> {
       data: { status: 'SENT', sentAt: new Date() },
     })
 
-    logger.info('Digest sent', { userId, messagesCount: rawMessages.length })
+    logger.info('Digest group sent', { userId, groupName, messagesCount: rawMessages.length })
   } catch (error) {
     await prisma.digest.update({
       where: { id: digest.id },
       data: { status: 'FAILED' },
     })
-    logger.error('Failed to send digest', { userId, error })
+    logger.error('Failed to send digest group', { userId, groupName, error })
     throw error
+  }
+}
+
+export async function sendDigestForUser(userId: number): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      userChannels: {
+        include: { channel: true, group: true },
+      },
+      channelGroups: true,
+    },
+  })
+
+  if (!user || !user.active) {
+    logger.warn('User not found or inactive', { userId })
+    throw new Error('Пользователь не найден или неактивен')
+  }
+
+  if (user.userChannels.length === 0) {
+    logger.info('User has no channels', { userId })
+    throw new Error('У вас нет подключённых каналов')
+  }
+
+  const periodEnd = new Date()
+  const periodStart = new Date(periodEnd.getTime() - 24 * 60 * 60 * 1000)
+  const telegramId = user.telegramId.toString()
+
+  // Split channels into groups and ungrouped
+  const groupedChannelIds = new Map<number, number[]>()
+  const ungroupedChannelIds: number[] = []
+
+  for (const uc of user.userChannels) {
+    if (uc.groupId !== null) {
+      const list = groupedChannelIds.get(uc.groupId) ?? []
+      list.push(uc.channelId)
+      groupedChannelIds.set(uc.groupId, list)
+    } else {
+      ungroupedChannelIds.push(uc.channelId)
+    }
+  }
+
+  let anySent = false
+
+  // Send a digest for each group
+  for (const group of user.channelGroups) {
+    const channelIds = groupedChannelIds.get(group.id)
+    if (!channelIds || channelIds.length === 0) continue
+
+    await sendDigestGroup(
+      userId,
+      telegramId,
+      channelIds,
+      periodStart,
+      periodEnd,
+      group.id,
+      group.name,
+      group.aiPrompt ?? undefined,
+    )
+    anySent = true
+  }
+
+  // Send digest for ungrouped channels
+  if (ungroupedChannelIds.length > 0) {
+    await sendDigestGroup(userId, telegramId, ungroupedChannelIds, periodStart, periodEnd)
+    anySent = true
+  }
+
+  if (!anySent) {
+    throw new Error('За последние 24 часа нет оценённых сообщений для дайджеста')
   }
 }

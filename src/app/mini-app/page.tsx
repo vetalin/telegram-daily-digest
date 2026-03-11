@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useTelegramAuth } from '@/hooks/useTelegramAuth'
 import { useApi } from '@/hooks/useApi'
-import type { ChannelResponse } from '@/types/api'
+import type { ChannelResponse, GroupResponse } from '@/types/api'
 
 export default function ChannelsPage() {
   const { initData, isReady } = useTelegramAuth()
   const { request } = useApi(initData)
   const [channels, setChannels] = useState<ChannelResponse[]>([])
+  const [groups, setGroups] = useState<GroupResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [sendingDigest, setSendingDigest] = useState(false)
@@ -18,8 +19,14 @@ export default function ChannelsPage() {
 
   useEffect(() => {
     if (!isReady || !initData) return
-    request<ChannelResponse[]>('/api/channels')
-      .then(setChannels)
+    Promise.all([
+      request<ChannelResponse[]>('/api/channels'),
+      request<GroupResponse[]>('/api/groups'),
+    ])
+      .then(([ch, gr]) => {
+        setChannels(ch)
+        setGroups(gr)
+      })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false))
   }, [isReady, initData, request])
@@ -57,6 +64,19 @@ export default function ChannelsPage() {
     return <div style={{ padding: 20, color: 'red' }}>Ошибка: {error}</div>
   }
 
+  // Build grouped channel lists
+  const groupedChannels: Record<number, ChannelResponse[]> = {}
+  const ungroupedChannels: ChannelResponse[] = []
+
+  for (const ch of channels) {
+    if (ch.groupId !== null && ch.groupId !== undefined) {
+      if (!groupedChannels[ch.groupId]) groupedChannels[ch.groupId] = []
+      groupedChannels[ch.groupId].push(ch)
+    } else {
+      ungroupedChannels.push(ch)
+    }
+  }
+
   return (
     <div style={{ padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -72,22 +92,68 @@ export default function ChannelsPage() {
           <p>Нажмите «+ Добавить», чтобы начать.</p>
         </div>
       ) : (
-        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-          {channels.map((ch) => (
-            <li key={ch.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid var(--tg-theme-hint-color, #ccc)' }}>
-              <div>
-                <div style={{ fontWeight: 600 }}>{ch.title}</div>
-                {ch.username && <div style={{ fontSize: 12, opacity: 0.6 }}>@{ch.username}</div>}
+        <>
+          {/* Grouped sections */}
+          {groups.map((group) => {
+            const groupChannels = groupedChannels[group.id] ?? []
+            if (groupChannels.length === 0) return null
+            return (
+              <div key={group.id} style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, opacity: 0.7, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    📂 {group.name}
+                  </div>
+                  <Link href={`/mini-app/groups/${group.id}`} style={{ fontSize: 12, color: 'var(--tg-theme-link-color, #2481cc)', textDecoration: 'none' }}>
+                    Изменить
+                  </Link>
+                </div>
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                  {groupChannels.map((ch) => (
+                    <li key={ch.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--tg-theme-hint-color, #ccc)' }}>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>{ch.title}</div>
+                        {ch.username && <div style={{ fontSize: 12, opacity: 0.6 }}>@{ch.username}</div>}
+                      </div>
+                      <button
+                        onClick={() => removeChannel(ch.id)}
+                        style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer', fontSize: 18, padding: 4 }}
+                      >
+                        ✕
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <button
-                onClick={() => removeChannel(ch.id)}
-                style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer', fontSize: 18, padding: 4 }}
-              >
-                ✕
-              </button>
-            </li>
-          ))}
-        </ul>
+            )
+          })}
+
+          {/* Ungrouped channels */}
+          {ungroupedChannels.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              {groups.length > 0 && (
+                <div style={{ fontSize: 13, fontWeight: 700, opacity: 0.7, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                  Без группы
+                </div>
+              )}
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                {ungroupedChannels.map((ch) => (
+                  <li key={ch.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid var(--tg-theme-hint-color, #ccc)' }}>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>{ch.title}</div>
+                      {ch.username && <div style={{ fontSize: 12, opacity: 0.6 }}>@{ch.username}</div>}
+                    </div>
+                    <button
+                      onClick={() => removeChannel(ch.id)}
+                      style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer', fontSize: 18, padding: 4 }}
+                    >
+                      ✕
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
       )}
 
       <div style={{ marginTop: 24 }}>
@@ -121,11 +187,14 @@ export default function ChannelsPage() {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Link href="/mini-app/settings" style={{ flex: 1, textAlign: 'center', padding: '10px', background: 'var(--tg-theme-secondary-bg-color, #f0f0f0)', borderRadius: 8, textDecoration: 'none', color: 'inherit' }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Link href="/mini-app/groups" style={{ flex: 1, textAlign: 'center', padding: '10px', background: 'var(--tg-theme-secondary-bg-color, #f0f0f0)', borderRadius: 8, textDecoration: 'none', color: 'inherit', minWidth: 100 }}>
+            📂 Группы
+          </Link>
+          <Link href="/mini-app/settings" style={{ flex: 1, textAlign: 'center', padding: '10px', background: 'var(--tg-theme-secondary-bg-color, #f0f0f0)', borderRadius: 8, textDecoration: 'none', color: 'inherit', minWidth: 100 }}>
             ⚙️ Настройки
           </Link>
-          <Link href="/mini-app/digests" style={{ flex: 1, textAlign: 'center', padding: '10px', background: 'var(--tg-theme-secondary-bg-color, #f0f0f0)', borderRadius: 8, textDecoration: 'none', color: 'inherit' }}>
+          <Link href="/mini-app/digests" style={{ flex: 1, textAlign: 'center', padding: '10px', background: 'var(--tg-theme-secondary-bg-color, #f0f0f0)', borderRadius: 8, textDecoration: 'none', color: 'inherit', minWidth: 100 }}>
             📰 Дайджесты
           </Link>
         </div>

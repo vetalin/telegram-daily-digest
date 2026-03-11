@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
       username: uc.channel.username,
       title: uc.channel.title,
       addedAt: uc.addedAt,
+      groupId: uc.groupId,
     })))
   } catch (error) {
     logger.error('GET /api/channels error', { error })

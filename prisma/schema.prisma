@@ -19,8 +19,9 @@ model User {
   digestPreferences String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-  userChannels UserChannel[]
-  digests      Digest[]
+  userChannels  UserChannel[]
+  digests       Digest[]
+  channelGroups ChannelGroup[]
 }
 
 model Channel {
@@ -34,14 +35,26 @@ model Channel {
 }
 
 model UserChannel {
-  id        Int      @id @default(autoincrement())
+  id        Int           @id @default(autoincrement())
   userId    Int
   channelId Int
-  addedAt   DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  groupId   Int?
+  addedAt   DateTime      @default(now())
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   Channel       @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  group     ChannelGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
 
   @@unique([userId, channelId])
+}
+
+model ChannelGroup {
+  id           Int           @id @default(autoincrement())
+  userId       Int
+  name         String
+  aiPrompt     String?
+  createdAt    DateTime      @default(now())
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userChannels UserChannel[]
 }
 
 model Message {
@@ -69,6 +82,8 @@ model Message {
 model Digest {
   id          Int           @id @default(autoincrement())
   userId      Int
+  groupId     Int?
+  groupName   String?
   generatedAt DateTime      @default(now())
   sentAt      DateTime?
   periodStart DateTime

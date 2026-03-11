@@ -5,6 +5,14 @@ export interface ChannelResponse {
   username: string | null
   title: string
   addedAt: string
+  groupId: number | null
+}
+
+export interface GroupResponse {
+  id: number
+  name: string
+  aiPrompt: string | null
+  channelCount: number
 }
 
 export interface SettingsResponse {
