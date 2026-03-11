@@ -16,7 +16,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.21.0",
+    "openai": "^4.77.0",
     "@prisma/client": "^5.22.0",
     "next": "14.2.18",
     "node-cron": "^3.0.3",

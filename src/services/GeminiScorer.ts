@@ -1,4 +1,4 @@
-import { getGeminiFlashModel } from '@/lib/gemini'
+import { getOpenRouterClient } from '@/lib/openrouter'
 import { createLogger } from '@/lib/logger'
 
 const logger = createLogger('GeminiScorer')
@@ -32,28 +32,32 @@ export async function scoreMessage(text: string): Promise<ScoreResult> {
   const textPreview = text.slice(0, 80).replace(/\n/g, ' ')
   logger.info('Scoring message', { textPreview, textLength: text.length })
 
-  let model
+  let client
   try {
-    model = getGeminiFlashModel()
+    client = getOpenRouterClient()
   } catch (err) {
-    logger.error('Failed to get Gemini model (GEMINI_API_KEY missing?)', { error: err })
+    logger.error('Failed to get OpenRouter client (OPENROUTER_API_KEY missing?)', { error: err })
     throw err
   }
 
-  let result
+  let completion
   try {
-    result = await model.generateContent([
-      SYSTEM_PROMPT,
-      `Message:\n${text.slice(0, 2000)}`,
-    ])
-    logger.debug('Gemini API call succeeded')
+    completion = await client.chat.completions.create({
+      model: 'google/gemini-3-flash-preview',
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: `Message:\n${text.slice(0, 2000)}` },
+      ],
+    })
+    logger.debug('OpenRouter API call succeeded')
   } catch (err) {
-    logger.error('Gemini API call failed', { error: err })
+    logger.error('OpenRouter API call failed', { error: err })
     throw err
   }
 
-  const responseText = result.response.text()
-  logger.debug('Gemini raw response', { responseText })
+  const responseText = completion.choices[0].message.content ?? ''
+  logger.debug('OpenRouter raw response', { responseText })
 
   try {
     const parsed = JSON.parse(responseText) as ScoreResult
@@ -66,7 +70,7 @@ export async function scoreMessage(text: string): Promise<ScoreResult> {
     logger.info('Message scored', { score: scored.importance, category: scored.category, isAd: scored.isAd })
     return scored
   } catch {
-    logger.error('Failed to parse Gemini JSON response', { responseText })
+    logger.error('Failed to parse OpenRouter JSON response', { responseText })
     return {
       importance: 5,
       category: 'other',
