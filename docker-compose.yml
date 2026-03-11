@@ -4,13 +4,13 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: digelegram
+      POSTGRES_PASSWORD: nNcIm0DD52rH28RXyo
       POSTGRES_DB: telegram_digest
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U digelegram"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -22,7 +22,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/telegram_digest
+      - DATABASE_URL=postgresql://digelegram:nNcIm0DD52rH28RXyo@postgres:5432/telegram_digest
       - BOT_TOKEN=${BOT_TOKEN}
       - WEBHOOK_URL=${WEBHOOK_URL}
       - INTERNAL_SECRET=${INTERNAL_SECRET}
@@ -38,7 +38,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile.worker
     environment:
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/telegram_digest
+      - DATABASE_URL=postgresql://digelegram:nNcIm0DD52rH28RXyo@postgres:5432/telegram_digest
       - BOT_TOKEN=${BOT_TOKEN}
       - API_ID=${API_ID}
       - API_HASH=${API_HASH}

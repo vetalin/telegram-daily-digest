@@ -1,6 +1,6 @@
 FROM node:20-alpine AS base
 WORKDIR /app
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat openssl
 
 FROM base AS deps
 COPY package*.json ./
@@ -13,8 +13,10 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
-FROM base AS runner
+FROM node:20-alpine AS runner
+WORKDIR /app
 ENV NODE_ENV=production
+RUN apk add --no-cache libc6-compat openssl
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
