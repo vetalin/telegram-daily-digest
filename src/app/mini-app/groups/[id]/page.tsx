@@ -11,6 +11,7 @@ interface GroupDetail {
   id: number
   name: string
   aiPrompt: string | null
+  maxMessages: number
   channelCount: number
   channels: ChannelResponse[]
 }
@@ -27,6 +28,7 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
   const [error, setError] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [aiPrompt, setAiPrompt] = useState('')
+  const [maxMessages, setMaxMessages] = useState(30)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [savedMsg, setSavedMsg] = useState(false)
@@ -41,6 +43,7 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
         setGroup(g)
         setName(g.name)
         setAiPrompt(g.aiPrompt ?? '')
+        setMaxMessages(g.maxMessages ?? 30)
         setAllChannels(ch)
       })
       .catch((e: Error) => setError(e.message))
@@ -53,9 +56,9 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
     try {
       await request(`/api/groups/${groupId}`, {
         method: 'PATCH',
-        body: JSON.stringify({ name: name.trim(), aiPrompt: aiPrompt.trim() || null }),
+        body: JSON.stringify({ name: name.trim(), aiPrompt: aiPrompt.trim() || null, maxMessages }),
       })
-      setGroup((prev) => prev ? { ...prev, name: name.trim(), aiPrompt: aiPrompt.trim() || null } : prev)
+      setGroup((prev) => prev ? { ...prev, name: name.trim(), aiPrompt: aiPrompt.trim() || null, maxMessages } : prev)
       setSavedMsg(true)
       setTimeout(() => setSavedMsg(false), 3000)
     } catch (e: unknown) {
@@ -144,6 +147,27 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
           rows={3}
           style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--tg-theme-hint-color, #ccc)', fontSize: 14, boxSizing: 'border-box', resize: 'vertical', background: 'var(--tg-theme-bg-color, #fff)', color: 'var(--tg-theme-text-color, #000)', fontFamily: 'inherit' }}
         />
+      </div>
+
+      {/* Max messages slider */}
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, opacity: 0.7, marginBottom: 6 }}>
+          <span>Максимум сообщений для анализа</span>
+          <span style={{ fontWeight: 700, opacity: 1 }}>{maxMessages}</span>
+        </label>
+        <input
+          type="range"
+          min={5}
+          max={100}
+          step={5}
+          value={maxMessages}
+          onChange={(e) => setMaxMessages(Number(e.target.value))}
+          style={{ width: '100%', accentColor: 'var(--tg-theme-button-color, #2481cc)' }}
+        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, opacity: 0.5, marginTop: 2 }}>
+          <span>5 (быстро)</span>
+          <span>100 (детально)</span>
+        </div>
       </div>
 
       <button

@@ -34,6 +34,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       id: group.id,
       name: group.name,
       aiPrompt: group.aiPrompt,
+      maxMessages: group.maxMessages,
       channelCount: group.userChannels.length,
       channels: group.userChannels.map((uc) => ({
         id: uc.channel.id,
@@ -68,13 +69,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ error: 'Group not found' }, { status: 404 })
     }
 
-    const body = (await req.json()) as { name?: string; aiPrompt?: string | null }
+    const body = (await req.json()) as { name?: string; aiPrompt?: string | null; maxMessages?: number }
 
     const group = await prisma.channelGroup.update({
       where: { id: groupId },
       data: {
         ...(body.name !== undefined && { name: body.name.trim() }),
         ...(body.aiPrompt !== undefined && { aiPrompt: body.aiPrompt?.trim() || null }),
+        ...(body.maxMessages !== undefined && { maxMessages: Math.min(100, Math.max(5, Math.round(body.maxMessages))) }),
       },
     })
 
@@ -82,6 +84,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       id: group.id,
       name: group.name,
       aiPrompt: group.aiPrompt,
+      maxMessages: group.maxMessages,
     })
   } catch (error) {
     logger.error('PATCH /api/groups/:id error', { error })

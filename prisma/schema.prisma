@@ -52,6 +52,7 @@ model ChannelGroup {
   userId       Int
   name         String
   aiPrompt     String?
+  maxMessages  Int           @default(30)
   createdAt    DateTime      @default(now())
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userChannels UserChannel[]

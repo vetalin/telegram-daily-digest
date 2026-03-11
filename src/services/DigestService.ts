@@ -76,6 +76,7 @@ async function sendDigestGroup(
   groupId?: number,
   groupName?: string,
   aiPrompt?: string,
+  maxMessages: number = 30,
 ): Promise<void> {
   const bot = getBot()
 
@@ -88,7 +89,7 @@ async function sendDigestGroup(
       isAd: false,
     },
     orderBy: { importanceScore: 'desc' },
-    take: 30,
+    take: maxMessages,
     include: { channel: true },
   })
 
@@ -221,6 +222,7 @@ export async function sendDigestForUser(userId: number): Promise<void> {
       group.id,
       group.name,
       group.aiPrompt ?? undefined,
+      group.maxMessages,
     )
     anySent = true
   }

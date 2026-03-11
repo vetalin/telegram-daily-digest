@@ -173,8 +173,14 @@ export default function ChannelsPage() {
             marginBottom: 8,
           }}
         >
-          {sendingDigest ? 'Отправляем...' : '📰 Получить дайджест сейчас'}
+          {sendingDigest ? '⏳ Нейросеть думает...' : '📰 Получить дайджест сейчас'}
         </button>
+
+        {sendingDigest && (
+          <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--tg-theme-hint-color, #888)', marginBottom: 8 }}>
+            Анализируем сообщения и формируем дайджест.<br />Это может занять до 5 минут.
+          </div>
+        )}
 
         {digestSent && (
           <div style={{ textAlign: 'center', fontSize: 14, color: 'green', marginBottom: 8 }}>
