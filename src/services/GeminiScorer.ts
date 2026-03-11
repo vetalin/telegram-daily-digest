@@ -29,25 +29,44 @@ Respond with valid JSON matching this schema:
 }`
 
 export async function scoreMessage(text: string): Promise<ScoreResult> {
-  const model = getGeminiFlashModel()
+  const textPreview = text.slice(0, 80).replace(/\n/g, ' ')
+  logger.info('Scoring message', { textPreview, textLength: text.length })
 
-  const result = await model.generateContent([
-    SYSTEM_PROMPT,
-    `Message:\n${text.slice(0, 2000)}`,
-  ])
+  let model
+  try {
+    model = getGeminiFlashModel()
+  } catch (err) {
+    logger.error('Failed to get Gemini model (GEMINI_API_KEY missing?)', { error: err })
+    throw err
+  }
+
+  let result
+  try {
+    result = await model.generateContent([
+      SYSTEM_PROMPT,
+      `Message:\n${text.slice(0, 2000)}`,
+    ])
+    logger.debug('Gemini API call succeeded')
+  } catch (err) {
+    logger.error('Gemini API call failed', { error: err })
+    throw err
+  }
 
   const responseText = result.response.text()
+  logger.debug('Gemini raw response', { responseText })
 
   try {
     const parsed = JSON.parse(responseText) as ScoreResult
-    return {
+    const scored: ScoreResult = {
       importance: Math.min(10, Math.max(1, parsed.importance)),
       category: parsed.category ?? 'other',
       isAd: parsed.isAd ?? false,
       summary: parsed.summary ?? '',
     }
+    logger.info('Message scored', { score: scored.importance, category: scored.category, isAd: scored.isAd })
+    return scored
   } catch {
-    logger.error('Failed to parse Gemini response', { responseText })
+    logger.error('Failed to parse Gemini JSON response', { responseText })
     return {
       importance: 5,
       category: 'other',

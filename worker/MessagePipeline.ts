@@ -15,14 +15,19 @@ export interface RawMessage {
 }
 
 export async function processPipelineMessage(raw: RawMessage): Promise<void> {
+  const textPreview = raw.text.slice(0, 60).replace(/\n/g, ' ')
+  logger.info('Processing message', { channelTelegramId: raw.channelTelegramId.toString(), msgId: raw.telegramMsgId, textPreview })
+
   const channel = await prisma.channel.findUnique({
     where: { telegramChannelId: raw.channelTelegramId },
   })
 
   if (!channel) {
-    logger.warn('Channel not found in DB', { channelTelegramId: raw.channelTelegramId.toString() })
+    logger.warn('Channel not found in DB — message dropped', { channelTelegramId: raw.channelTelegramId.toString() })
     return
   }
+
+  logger.debug('Channel found', { channelId: channel.id, channelTitle: channel.title })
 
   const filterResult = filterMessage(raw.text)
 
@@ -44,15 +49,17 @@ export async function processPipelineMessage(raw: RawMessage): Promise<void> {
       },
       update: {},
     })
-    logger.debug('Message filtered', { reason: filterResult.reason, msgId: raw.telegramMsgId })
+    logger.info('Message filtered (skipped)', { reason: filterResult.reason, msgId: raw.telegramMsgId, channel: channel.title })
     return
   }
+
+  logger.info('Message passed filter, sending to Gemini', { msgId: raw.telegramMsgId, channel: channel.title })
 
   let scoreResult
   try {
     scoreResult = await scoreMessage(raw.text)
   } catch (error) {
-    logger.error('Scoring failed, saving unscored', { error })
+    logger.error('Gemini scoring failed, saving unscored', { error, msgId: raw.telegramMsgId, channel: channel.title })
     await prisma.message.upsert({
       where: {
         channelId_telegramMsgId: {
@@ -102,10 +109,11 @@ export async function processPipelineMessage(raw: RawMessage): Promise<void> {
     },
   })
 
-  logger.info('Message processed', {
-    channelId: channel.id,
+  logger.info('Message processed and saved', {
+    channel: channel.title,
     msgId: raw.telegramMsgId,
     score: scoreResult.importance,
     category: scoreResult.category,
+    isAd: scoreResult.isAd,
   })
 }

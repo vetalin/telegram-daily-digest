@@ -14,7 +14,8 @@ export async function POST(req: NextRequest) {
     await sendDigestForUser(user.id)
     return NextResponse.json({ ok: true })
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Не удалось отправить дайджест'
     logger.error('POST /api/digests/send-now error', { error })
-    return NextResponse.json({ error: 'Не удалось отправить дайджест' }, { status: 500 })
+    return NextResponse.json({ error: message }, { status: 400 })
   }
 }

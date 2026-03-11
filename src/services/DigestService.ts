@@ -64,13 +64,13 @@ export async function sendDigestForUser(userId: number): Promise<void> {
 
   if (!user || !user.active) {
     logger.warn('User not found or inactive', { userId })
-    return
+    throw new Error('Пользователь не найден или неактивен')
   }
 
   const channelIds = user.userChannels.map((uc) => uc.channelId)
   if (channelIds.length === 0) {
     logger.info('User has no channels', { userId })
-    return
+    throw new Error('У вас нет подключённых каналов')
   }
 
   const periodEnd = new Date()
@@ -91,7 +91,7 @@ export async function sendDigestForUser(userId: number): Promise<void> {
 
   if (rawMessages.length === 0) {
     logger.info('No messages for digest', { userId })
-    return
+    throw new Error('За последние 24 часа нет оценённых сообщений для дайджеста')
   }
 
   const digest = await prisma.digest.create({
