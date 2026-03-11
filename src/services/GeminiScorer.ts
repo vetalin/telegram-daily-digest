@@ -28,6 +28,54 @@ Respond with valid JSON matching this schema:
   "summary": string (1-2 sentences in Russian)
 }`
 
+const DIGEST_SUMMARY_PROMPT = `Ты — аналитик новостей. Тебе дан список самых важных новостей за день из Telegram-каналов пользователя.
+Напиши краткое аналитическое резюме на русском языке:
+- Выдели 3-5 главных тем/событий дня
+- Проанализируй связи между событиями, если они есть
+- Сделай краткие выводы о том, что происходит
+- Укажи, на что стоит обратить особое внимание
+
+Формат ответа: обычный текст (не JSON), 5-10 предложений, структурированно и по делу.`
+
+export interface DigestSummaryInput {
+  category: string
+  channelTitle: string
+  summary: string
+  score: number
+}
+
+export async function generateDigestSummary(messages: DigestSummaryInput[]): Promise<string> {
+  let client
+  try {
+    client = getOpenRouterClient()
+  } catch (err) {
+    logger.error('Failed to get OpenRouter client for digest summary', { error: err })
+    throw err
+  }
+
+  const newsBlock = messages
+    .map((m, i) => `${i + 1}. [${m.category}] ${m.channelTitle}: ${m.summary} (важность: ${m.score.toFixed(1)})`)
+    .join('\n')
+
+  let completion
+  try {
+    completion = await client.chat.completions.create({
+      model: 'google/gemini-3-flash-preview',
+      messages: [
+        { role: 'system', content: DIGEST_SUMMARY_PROMPT },
+        { role: 'user', content: `Новости дня:\n${newsBlock}` },
+      ],
+    })
+  } catch (err) {
+    logger.error('OpenRouter API call failed for digest summary', { error: err })
+    throw err
+  }
+
+  const result = completion.choices[0].message.content ?? ''
+  logger.info('Digest summary generated', { length: result.length })
+  return result
+}
+
 export async function scoreMessage(text: string): Promise<ScoreResult> {
   const textPreview = text.slice(0, 80).replace(/\n/g, ' ')
   logger.info('Scoring message', { textPreview, textLength: text.length })

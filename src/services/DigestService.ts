@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { getBot } from '@/lib/bot'
 import { createLogger } from '@/lib/logger'
+import { generateDigestSummary } from '@/services/GeminiScorer'
 
 const logger = createLogger('DigestService')
 const MAX_MESSAGE_LENGTH = 4096
@@ -124,9 +125,24 @@ export async function sendDigestForUser(userId: number): Promise<void> {
   const parts = splitText(text, MAX_MESSAGE_LENGTH)
   const bot = getBot()
 
+  let summaryText: string | null = null
+  try {
+    summaryText = await generateDigestSummary(messages)
+  } catch (err) {
+    logger.warn('Failed to generate digest summary, skipping', { userId, error: err })
+  }
+
   try {
     for (const part of parts) {
       await bot.sendMessage(user.telegramId.toString(), part, { parse_mode: 'HTML' })
+    }
+
+    if (summaryText) {
+      const summaryMessage = `<b>🧠 Аналитика дня</b>\n\n${summaryText}`
+      const summaryParts = splitText(summaryMessage, MAX_MESSAGE_LENGTH)
+      for (const part of summaryParts) {
+        await bot.sendMessage(user.telegramId.toString(), part, { parse_mode: 'HTML' })
+      }
     }
 
     await prisma.digest.update({
