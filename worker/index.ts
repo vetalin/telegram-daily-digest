@@ -127,7 +127,7 @@ async function main(): Promise<void> {
   logger.info('Starting worker process')
 
   // Проверяем критичные env переменные при старте
-  const requiredEnv = ['GEMINI_API_KEY', 'BOT_TOKEN', 'INTERNAL_SECRET']
+  const requiredEnv = ['OPENROUTER_API_KEY', 'BOT_TOKEN', 'INTERNAL_SECRET']
   for (const key of requiredEnv) {
     if (!process.env[key]) {
       logger.error(`Missing required env variable: ${key}`)
