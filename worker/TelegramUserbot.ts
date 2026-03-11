@@ -28,6 +28,14 @@ export async function initUserbot(): Promise<TelegramClient> {
 
   logger.info('Userbot connected')
 
+  // Populate entity cache (access hashes) for all joined channels
+  try {
+    await client.getDialogs({ limit: 500 })
+    logger.info('Entity cache populated via getDialogs')
+  } catch (e) {
+    logger.warn('getDialogs failed, entity resolution may fail', { error: (e as Error).message })
+  }
+
   client.addEventHandler(handleNewMessage, new NewMessage({}))
 
   return client
@@ -95,7 +103,7 @@ export async function fetchChannelHistory(
   if (!client) throw new Error('Userbot not initialized')
 
   const rawId = channelTelegramId.toString().replace(/^-100/, '')
-  const entity = await client.getEntity(BigInt(rawId))
+  const entity = await client.getEntity(new Api.PeerChannel({ channelId: BigInt(rawId) }))
 
   const messages = await client.getMessages(entity, { limit })
 
