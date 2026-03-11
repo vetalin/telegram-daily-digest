@@ -13,9 +13,10 @@ model User {
   telegramId   BigInt        @unique
   username     String?
   firstName    String?
-  digestTime   String        @default("08:00")
-  timezone     String        @default("UTC")
-  active       Boolean       @default(true)
+  digestTime        String        @default("08:00")
+  timezone          String        @default("UTC")
+  active            Boolean       @default(true)
+  digestPreferences String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   userChannels UserChannel[]

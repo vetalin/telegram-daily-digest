@@ -11,6 +11,7 @@ export interface SettingsResponse {
   digestTime: string
   timezone: string
   active: boolean
+  digestPreferences: string | null
 }
 
 export interface DigestListItem {

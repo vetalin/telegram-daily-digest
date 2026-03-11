@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
       digestTime: user.digestTime,
       timezone: user.timezone,
       active: user.active,
+      digestPreferences: user.digestPreferences,
     })
   } catch (error) {
     logger.error('GET /api/settings error', { error })
@@ -28,9 +29,9 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const user = await getAuthenticatedUser(initData)
-    const body = (await req.json()) as Partial<{ digestTime: string; timezone: string; active: boolean }>
+    const body = (await req.json()) as Partial<{ digestTime: string; timezone: string; active: boolean; digestPreferences: string | null }>
 
-    const updates: { digestTime?: string; timezone?: string; active?: boolean } = {}
+    const updates: { digestTime?: string; timezone?: string; active?: boolean; digestPreferences?: string | null } = {}
 
     if (body.digestTime !== undefined) {
       if (!/^\d{2}:\d{2}$/.test(body.digestTime)) {
@@ -52,6 +53,10 @@ export async function PATCH(req: NextRequest) {
       updates.active = body.active
     }
 
+    if (body.digestPreferences !== undefined) {
+      updates.digestPreferences = body.digestPreferences
+    }
+
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: updates,
@@ -61,6 +66,7 @@ export async function PATCH(req: NextRequest) {
       digestTime: updated.digestTime,
       timezone: updated.timezone,
       active: updated.active,
+      digestPreferences: updated.digestPreferences,
     })
   } catch (error) {
     logger.error('PATCH /api/settings error', { error })

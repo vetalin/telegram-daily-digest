@@ -27,6 +27,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<SettingsResponse | null>(null)
   const [digestTime, setDigestTime] = useState('08:00')
   const [timezone, setTimezone] = useState('UTC')
+  const [digestPreferences, setDigestPreferences] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -39,6 +40,7 @@ export default function SettingsPage() {
         setSettings(s)
         setDigestTime(s.digestTime)
         setTimezone(s.timezone)
+        setDigestPreferences(s.digestPreferences ?? '')
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false))
@@ -51,7 +53,11 @@ export default function SettingsPage() {
     try {
       const updated = await request<SettingsResponse>('/api/settings', {
         method: 'PATCH',
-        body: JSON.stringify({ digestTime, timezone }),
+        body: JSON.stringify({
+          digestTime,
+          timezone,
+          digestPreferences: digestPreferences.trim() || null,
+        }),
       })
       setSettings(updated)
       setSaved(true)
@@ -115,6 +121,35 @@ export default function SettingsPage() {
             <option key={tz} value={tz}>{tz}</option>
           ))}
         </select>
+      </label>
+
+      <label style={{ display: 'block', marginBottom: 24 }}>
+        <div style={{ fontWeight: 500, marginBottom: 6 }}>Пожелания к дайджесту</div>
+        <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 8 }}>
+          Опишите, какие темы и новости интересуют вас больше всего, что выделить в первую очередь.
+        </div>
+        <textarea
+          value={digestPreferences}
+          onChange={(e) => setDigestPreferences(e.target.value)}
+          placeholder="Например: интересует крипта и стартапы, особенно про AI. Политику не присылать. Выделять новости про инвестиции."
+          rows={5}
+          maxLength={1000}
+          style={{
+            width: '100%',
+            padding: '10px 12px',
+            borderRadius: 8,
+            border: '1px solid var(--tg-theme-hint-color, #ccc)',
+            fontSize: 15,
+            boxSizing: 'border-box',
+            background: 'var(--tg-theme-bg-color, #fff)',
+            color: 'var(--tg-theme-text-color, #000)',
+            resize: 'vertical',
+            lineHeight: 1.5,
+          }}
+        />
+        <div style={{ textAlign: 'right', fontSize: 12, opacity: 0.4, marginTop: 4 }}>
+          {digestPreferences.length}/1000
+        </div>
       </label>
 
       {error && <div style={{ marginBottom: 12, color: 'red', fontSize: 14 }}>{error}</div>}

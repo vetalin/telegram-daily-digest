@@ -2,7 +2,7 @@
 const nextConfig = {
   output: 'standalone',
   experimental: {
-    serverComponentsExternalPackages: ['winston', 'telegram'],
+    serverComponentsExternalPackages: ['winston', 'telegram', 'node-telegram-bot-api'],
   },
 }
 

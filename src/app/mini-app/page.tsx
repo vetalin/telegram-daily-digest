@@ -12,6 +12,9 @@ export default function ChannelsPage() {
   const [channels, setChannels] = useState<ChannelResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [sendingDigest, setSendingDigest] = useState(false)
+  const [digestSent, setDigestSent] = useState(false)
+  const [digestError, setDigestError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isReady || !initData) return
@@ -27,6 +30,22 @@ export default function ChannelsPage() {
       setChannels((prev) => prev.filter((c) => c.id !== channelId))
     } catch (e: unknown) {
       alert((e as Error).message)
+    }
+  }
+
+  async function handleSendNow() {
+    setSendingDigest(true)
+    setDigestError(null)
+    setDigestSent(false)
+    try {
+      await request('/api/digests/send-now', { method: 'POST' })
+      setDigestSent(true)
+      setTimeout(() => setDigestSent(false), 4000)
+    } catch (e: unknown) {
+      setDigestError((e as Error).message)
+      setTimeout(() => setDigestError(null), 4000)
+    } finally {
+      setSendingDigest(false)
     }
   }
 
@@ -71,13 +90,45 @@ export default function ChannelsPage() {
         </ul>
       )}
 
-      <div style={{ marginTop: 24, display: 'flex', gap: 8 }}>
-        <Link href="/mini-app/settings" style={{ flex: 1, textAlign: 'center', padding: '10px', background: 'var(--tg-theme-secondary-bg-color, #f0f0f0)', borderRadius: 8, textDecoration: 'none', color: 'inherit' }}>
-          ⚙️ Настройки
-        </Link>
-        <Link href="/mini-app/digests" style={{ flex: 1, textAlign: 'center', padding: '10px', background: 'var(--tg-theme-secondary-bg-color, #f0f0f0)', borderRadius: 8, textDecoration: 'none', color: 'inherit' }}>
-          📰 Дайджесты
-        </Link>
+      <div style={{ marginTop: 24 }}>
+        <button
+          onClick={handleSendNow}
+          disabled={sendingDigest || channels.length === 0}
+          style={{
+            width: '100%',
+            padding: '12px',
+            background: 'var(--tg-theme-button-color, #2481cc)',
+            color: 'var(--tg-theme-button-text-color, #fff)',
+            border: 'none',
+            borderRadius: 8,
+            fontSize: 16,
+            cursor: (sendingDigest || channels.length === 0) ? 'default' : 'pointer',
+            opacity: (sendingDigest || channels.length === 0) ? 0.6 : 1,
+            marginBottom: 8,
+          }}
+        >
+          {sendingDigest ? 'Отправляем...' : '📰 Получить дайджест сейчас'}
+        </button>
+
+        {digestSent && (
+          <div style={{ textAlign: 'center', fontSize: 14, color: 'green', marginBottom: 8 }}>
+            ✓ Дайджест отправлен в чат!
+          </div>
+        )}
+        {digestError && (
+          <div style={{ textAlign: 'center', fontSize: 14, color: 'red', marginBottom: 8 }}>
+            {digestError}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Link href="/mini-app/settings" style={{ flex: 1, textAlign: 'center', padding: '10px', background: 'var(--tg-theme-secondary-bg-color, #f0f0f0)', borderRadius: 8, textDecoration: 'none', color: 'inherit' }}>
+            ⚙️ Настройки
+          </Link>
+          <Link href="/mini-app/digests" style={{ flex: 1, textAlign: 'center', padding: '10px', background: 'var(--tg-theme-secondary-bg-color, #f0f0f0)', borderRadius: 8, textDecoration: 'none', color: 'inherit' }}>
+            📰 Дайджесты
+          </Link>
+        </div>
       </div>
     </div>
   )
