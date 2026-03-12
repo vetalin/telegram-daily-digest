@@ -19,6 +19,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.nextjs
+    restart: always
     ports:
       - "3000:3000"
     environment:
@@ -38,6 +39,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.worker
+    restart: always
     environment:
       - DATABASE_URL=postgresql://digelegram:nNcIm0DD52rH28RXyo@postgres:5432/telegram_digest
       - BOT_TOKEN=${BOT_TOKEN}
