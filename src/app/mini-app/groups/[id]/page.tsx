@@ -12,6 +12,8 @@ interface GroupDetail {
   name: string
   aiPrompt: string | null
   maxMessages: number
+  minImportanceScore: number
+  analyticsOnly: boolean
   channelCount: number
   channels: ChannelResponse[]
 }
@@ -29,6 +31,8 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
   const [name, setName] = useState('')
   const [aiPrompt, setAiPrompt] = useState('')
   const [maxMessages, setMaxMessages] = useState(30)
+  const [minImportanceScore, setMinImportanceScore] = useState(1)
+  const [analyticsOnly, setAnalyticsOnly] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [savedMsg, setSavedMsg] = useState(false)
@@ -44,6 +48,8 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
         setName(g.name)
         setAiPrompt(g.aiPrompt ?? '')
         setMaxMessages(g.maxMessages ?? 30)
+        setMinImportanceScore(g.minImportanceScore ?? 1)
+        setAnalyticsOnly(g.analyticsOnly ?? false)
         setAllChannels(ch)
       })
       .catch((e: Error) => setError(e.message))
@@ -56,9 +62,9 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
     try {
       await request(`/api/groups/${groupId}`, {
         method: 'PATCH',
-        body: JSON.stringify({ name: name.trim(), aiPrompt: aiPrompt.trim() || null, maxMessages }),
+        body: JSON.stringify({ name: name.trim(), aiPrompt: aiPrompt.trim() || null, maxMessages, minImportanceScore, analyticsOnly }),
       })
-      setGroup((prev) => prev ? { ...prev, name: name.trim(), aiPrompt: aiPrompt.trim() || null, maxMessages } : prev)
+      setGroup((prev) => prev ? { ...prev, name: name.trim(), aiPrompt: aiPrompt.trim() || null, maxMessages, minImportanceScore, analyticsOnly } : prev)
       setSavedMsg(true)
       setTimeout(() => setSavedMsg(false), 3000)
     } catch (e: unknown) {
@@ -168,6 +174,50 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
           <span>5 (быстро)</span>
           <span>100 (детально)</span>
         </div>
+      </div>
+
+      {/* Min importance score slider */}
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, opacity: 0.7, marginBottom: 6 }}>
+          <span>Минимальная оценка новости</span>
+          <span style={{ fontWeight: 700, opacity: 1 }}>{minImportanceScore === 1 ? 'все' : `${minImportanceScore}+`}</span>
+        </label>
+        <input
+          type="range"
+          min={1}
+          max={10}
+          step={1}
+          value={minImportanceScore}
+          onChange={(e) => setMinImportanceScore(Number(e.target.value))}
+          style={{ width: '100%', accentColor: 'var(--tg-theme-button-color, #2481cc)' }}
+        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, opacity: 0.5, marginTop: 2 }}>
+          <span>1 (все новости)</span>
+          <span>10 (только топ)</span>
+        </div>
+        {minImportanceScore >= 8 && (
+          <div style={{ fontSize: 12, color: 'var(--tg-theme-hint-color, #888)', marginTop: 4 }}>
+            Будут приходить только самые важные новости
+          </div>
+        )}
+      </div>
+
+      {/* Analytics only toggle */}
+      <div style={{ marginBottom: 20, padding: '12px 14px', background: 'var(--tg-theme-secondary-bg-color, #f5f5f5)', borderRadius: 10 }}>
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={analyticsOnly}
+            onChange={(e) => setAnalyticsOnly(e.target.checked)}
+            style={{ marginTop: 2, width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--tg-theme-button-color, #2481cc)', flexShrink: 0 }}
+          />
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>Только аналитика нейросети</div>
+            <div style={{ fontSize: 12, opacity: 0.6, marginTop: 3 }}>
+              Вместо списка новостей — один развёрнутый аналитический обзор со ссылками на источники. Список новостей отправляться не будет.
+            </div>
+          </div>
+        </label>
       </div>
 
       <button

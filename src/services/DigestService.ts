@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { getBot } from '@/lib/bot'
 import { createLogger } from '@/lib/logger'
-import { generateDigestSummary } from '@/services/GeminiScorer'
+import { generateDigestSummary, generateAnalyticsOnlySummary } from '@/services/GeminiScorer'
 
 const logger = createLogger('DigestService')
 const MAX_MESSAGE_LENGTH = 4096
@@ -77,6 +77,8 @@ async function sendDigestGroup(
   groupName?: string,
   aiPrompt?: string,
   maxMessages: number = 30,
+  minImportanceScore: number = 1,
+  analyticsOnly: boolean = false,
 ): Promise<void> {
   const bot = getBot()
 
@@ -85,7 +87,7 @@ async function sendDigestGroup(
       channelId: { in: channelIds },
       postedAt: { gte: periodStart, lte: periodEnd },
       isFiltered: false,
-      importanceScore: { not: null },
+      importanceScore: { gte: minImportanceScore },
       isAd: false,
     },
     orderBy: { importanceScore: 'desc' },
@@ -127,27 +129,43 @@ async function sendDigestGroup(
     messageLink: buildMessageLink(msg.channel, msg.telegramMsgId),
   }))
 
-  const text = formatDigestText(messages, periodStart, groupName)
-  const parts = splitText(text, MAX_MESSAGE_LENGTH)
-
-  let summaryText: string | null = null
   try {
-    summaryText = await generateDigestSummary(messages, aiPrompt)
-  } catch (err) {
-    logger.warn('Failed to generate digest summary, skipping', { userId, groupName, error: err })
-  }
-
-  try {
-    for (const part of parts) {
-      await bot.sendMessage(telegramId, part, { parse_mode: 'HTML' })
-    }
-
-    if (summaryText) {
+    if (analyticsOnly) {
       const label = groupName ? `🧠 Аналитика: ${groupName}` : '🧠 Аналитика дня'
-      const summaryMessage = `<b>${label}</b>\n\n${summaryText}`
-      const summaryParts = splitText(summaryMessage, MAX_MESSAGE_LENGTH)
-      for (const part of summaryParts) {
+      let analyticsText: string
+      try {
+        analyticsText = await generateAnalyticsOnlySummary(messages, aiPrompt)
+      } catch (err) {
+        logger.warn('Failed to generate analytics-only summary', { userId, groupName, error: err })
+        throw err
+      }
+      const analyticsMessage = `<b>${label}</b>\n\n${analyticsText}`
+      const analyticsParts = splitText(analyticsMessage, MAX_MESSAGE_LENGTH)
+      for (const part of analyticsParts) {
         await bot.sendMessage(telegramId, part, { parse_mode: 'HTML' })
+      }
+    } else {
+      const text = formatDigestText(messages, periodStart, groupName)
+      const parts = splitText(text, MAX_MESSAGE_LENGTH)
+
+      let summaryText: string | null = null
+      try {
+        summaryText = await generateDigestSummary(messages, aiPrompt)
+      } catch (err) {
+        logger.warn('Failed to generate digest summary, skipping', { userId, groupName, error: err })
+      }
+
+      for (const part of parts) {
+        await bot.sendMessage(telegramId, part, { parse_mode: 'HTML' })
+      }
+
+      if (summaryText) {
+        const label = groupName ? `🧠 Аналитика: ${groupName}` : '🧠 Аналитика дня'
+        const summaryMessage = `<b>${label}</b>\n\n${summaryText}`
+        const summaryParts = splitText(summaryMessage, MAX_MESSAGE_LENGTH)
+        for (const part of summaryParts) {
+          await bot.sendMessage(telegramId, part, { parse_mode: 'HTML' })
+        }
       }
     }
 
@@ -223,13 +241,27 @@ export async function sendDigestForUser(userId: number): Promise<void> {
       group.name,
       group.aiPrompt ?? undefined,
       group.maxMessages,
+      group.minImportanceScore,
+      group.analyticsOnly,
     )
     anySent = true
   }
 
   // Send digest for ungrouped channels
   if (ungroupedChannelIds.length > 0) {
-    await sendDigestGroup(userId, telegramId, ungroupedChannelIds, periodStart, periodEnd)
+    await sendDigestGroup(
+      userId,
+      telegramId,
+      ungroupedChannelIds,
+      periodStart,
+      periodEnd,
+      undefined,
+      undefined,
+      undefined,
+      30,
+      user.minImportanceScore,
+      user.analyticsOnly,
+    )
     anySent = true
   }
 

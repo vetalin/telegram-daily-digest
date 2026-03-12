@@ -12,6 +12,9 @@ export interface GroupResponse {
   id: number
   name: string
   aiPrompt: string | null
+  maxMessages: number
+  minImportanceScore: number
+  analyticsOnly: boolean
   channelCount: number
 }
 
@@ -20,6 +23,8 @@ export interface SettingsResponse {
   timezone: string
   active: boolean
   digestPreferences: string | null
+  minImportanceScore: number
+  analyticsOnly: boolean
 }
 
 export interface DigestListItem {

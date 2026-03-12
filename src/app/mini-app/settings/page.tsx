@@ -28,6 +28,8 @@ export default function SettingsPage() {
   const [digestTime, setDigestTime] = useState('08:00')
   const [timezone, setTimezone] = useState('UTC')
   const [digestPreferences, setDigestPreferences] = useState('')
+  const [minImportanceScore, setMinImportanceScore] = useState(1)
+  const [analyticsOnly, setAnalyticsOnly] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,6 +43,8 @@ export default function SettingsPage() {
         setDigestTime(s.digestTime)
         setTimezone(s.timezone)
         setDigestPreferences(s.digestPreferences ?? '')
+        setMinImportanceScore(s.minImportanceScore ?? 1)
+        setAnalyticsOnly(s.analyticsOnly ?? false)
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false))
@@ -57,6 +61,8 @@ export default function SettingsPage() {
           digestTime,
           timezone,
           digestPreferences: digestPreferences.trim() || null,
+          minImportanceScore,
+          analyticsOnly,
         }),
       })
       setSettings(updated)
@@ -151,6 +157,50 @@ export default function SettingsPage() {
           {digestPreferences.length}/1000
         </div>
       </label>
+
+      {/* Min importance score */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontWeight: 500, marginBottom: 6 }}>
+          Минимальная оценка новости
+          <span style={{ marginLeft: 8, fontWeight: 700, color: 'var(--tg-theme-button-color, #2481cc)' }}>
+            {minImportanceScore === 1 ? 'все' : `${minImportanceScore}+`}
+          </span>
+        </div>
+        <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 8 }}>
+          Новости с оценкой ниже указанной не будут попадать в дайджест.
+        </div>
+        <input
+          type="range"
+          min={1}
+          max={10}
+          step={1}
+          value={minImportanceScore}
+          onChange={(e) => setMinImportanceScore(Number(e.target.value))}
+          style={{ width: '100%', accentColor: 'var(--tg-theme-button-color, #2481cc)' }}
+        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, opacity: 0.5, marginTop: 2 }}>
+          <span>1 (все новости)</span>
+          <span>10 (только топ)</span>
+        </div>
+      </div>
+
+      {/* Analytics only toggle */}
+      <div style={{ marginBottom: 24, padding: '12px 14px', background: 'var(--tg-theme-secondary-bg-color, #f5f5f5)', borderRadius: 10 }}>
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={analyticsOnly}
+            onChange={(e) => setAnalyticsOnly(e.target.checked)}
+            style={{ marginTop: 2, width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--tg-theme-button-color, #2481cc)', flexShrink: 0 }}
+          />
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>Только аналитика нейросети</div>
+            <div style={{ fontSize: 13, opacity: 0.6, marginTop: 4 }}>
+              Вместо списка новостей — один развёрнутый аналитический обзор со ссылками на источники. Список новостей отправляться не будет.
+            </div>
+          </div>
+        </label>
+      </div>
 
       {error && <div style={{ marginBottom: 12, color: 'red', fontSize: 14 }}>{error}</div>}
       {saved && <div style={{ marginBottom: 12, color: 'green', fontSize: 14 }}>✓ Сохранено</div>}

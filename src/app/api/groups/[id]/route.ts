@@ -35,6 +35,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       name: group.name,
       aiPrompt: group.aiPrompt,
       maxMessages: group.maxMessages,
+      minImportanceScore: group.minImportanceScore,
+      analyticsOnly: group.analyticsOnly,
       channelCount: group.userChannels.length,
       channels: group.userChannels.map((uc) => ({
         id: uc.channel.id,
@@ -69,7 +71,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ error: 'Group not found' }, { status: 404 })
     }
 
-    const body = (await req.json()) as { name?: string; aiPrompt?: string | null; maxMessages?: number }
+    const body = (await req.json()) as { name?: string; aiPrompt?: string | null; maxMessages?: number; minImportanceScore?: number; analyticsOnly?: boolean }
 
     const group = await prisma.channelGroup.update({
       where: { id: groupId },
@@ -77,6 +79,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         ...(body.name !== undefined && { name: body.name.trim() }),
         ...(body.aiPrompt !== undefined && { aiPrompt: body.aiPrompt?.trim() || null }),
         ...(body.maxMessages !== undefined && { maxMessages: Math.min(100, Math.max(5, Math.round(body.maxMessages))) }),
+        ...(body.minImportanceScore !== undefined && { minImportanceScore: Math.min(10, Math.max(1, body.minImportanceScore)) }),
+        ...(body.analyticsOnly !== undefined && { analyticsOnly: body.analyticsOnly }),
       },
     })
 
@@ -85,6 +89,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       name: group.name,
       aiPrompt: group.aiPrompt,
       maxMessages: group.maxMessages,
+      minImportanceScore: group.minImportanceScore,
+      analyticsOnly: group.analyticsOnly,
     })
   } catch (error) {
     logger.error('PATCH /api/groups/:id error', { error })

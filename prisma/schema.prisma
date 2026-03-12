@@ -17,6 +17,8 @@ model User {
   timezone          String        @default("UTC")
   active            Boolean       @default(true)
   digestPreferences String?
+  minImportanceScore Float        @default(1)
+  analyticsOnly      Boolean      @default(false)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   userChannels  UserChannel[]
@@ -48,14 +50,16 @@ model UserChannel {
 }
 
 model ChannelGroup {
-  id           Int           @id @default(autoincrement())
-  userId       Int
-  name         String
-  aiPrompt     String?
-  maxMessages  Int           @default(30)
-  createdAt    DateTime      @default(now())
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userChannels UserChannel[]
+  id                 Int           @id @default(autoincrement())
+  userId             Int
+  name               String
+  aiPrompt           String?
+  maxMessages        Int           @default(30)
+  minImportanceScore Float         @default(1)
+  analyticsOnly      Boolean       @default(false)
+  createdAt          DateTime      @default(now())
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userChannels       UserChannel[]
 }
 
 model Message {
