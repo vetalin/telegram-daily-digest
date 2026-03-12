@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
             chatId,
             audioBuffer,
             { title: digest.groupName ? `Аналитика: ${digest.groupName}` : 'Аналитика дня' },
-            { filename: 'analytics.mp3', contentType: 'audio/mpeg' },
+            { filename: 'analytics.wav', contentType: 'audio/wav' },
           )
         } catch (err) {
           logger.error('Failed to generate audio', { digestId, error: err })
