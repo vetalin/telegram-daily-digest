@@ -28,6 +28,7 @@ services:
       - INTERNAL_SECRET=${INTERNAL_SECRET}
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
       - WORKER_URL=http://worker:3001
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - NODE_ENV=production
     depends_on:
       postgres:

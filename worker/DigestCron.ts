@@ -30,7 +30,7 @@ async function hasRecentDigest(userId: number): Promise<boolean> {
     where: {
       userId,
       generatedAt: { gte: cutoff },
-      status: { in: ['SENT', 'PENDING'] },
+      status: 'SENT',
     },
   })
   return recent !== null
