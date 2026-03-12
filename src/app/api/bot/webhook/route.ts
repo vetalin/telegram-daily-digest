@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getBot } from '@/lib/bot'
 import { prisma } from '@/lib/prisma'
 import { createLogger } from '@/lib/logger'
+import { textToAudio } from '@/services/AudioService'
 
 const logger = createLogger('BotWebhook')
 
@@ -44,6 +45,42 @@ export async function POST(req: NextRequest) {
         await bot.sendMessage(chatId, '📖 <b>Как пользоваться:</b>\n\n1. Откройте Mini App\n2. Добавьте каналы для мониторинга\n3. Настройте время дайджеста\n4. Получайте ежедневные сводки!\n\n/start — главное меню', {
           parse_mode: 'HTML',
         })
+      }
+    }
+
+    if (update.callback_query) {
+      const query = update.callback_query
+      const chatId = query.message?.chat?.id
+      const data: string = query.data ?? ''
+
+      await bot.answerCallbackQuery(query.id)
+
+      if (data.startsWith('audio:') && chatId) {
+        const digestId = parseInt(data.slice('audio:'.length), 10)
+        if (isNaN(digestId)) return NextResponse.json({ ok: true })
+
+        const digest = await prisma.digest.findUnique({ where: { id: digestId } })
+        if (!digest?.analyticsText) {
+          await bot.sendMessage(chatId, '❌ Текст аналитики не найден.')
+          return NextResponse.json({ ok: true })
+        }
+
+        const processingMsg = await bot.sendMessage(chatId, '🎙 Генерирую аудио, подождите...')
+
+        try {
+          const audioBuffer = await textToAudio(digest.analyticsText)
+          await bot.sendAudio(
+            chatId,
+            audioBuffer,
+            { title: digest.groupName ? `Аналитика: ${digest.groupName}` : 'Аналитика дня' },
+            { filename: 'analytics.mp3', contentType: 'audio/mpeg' },
+          )
+        } catch (err) {
+          logger.error('Failed to generate audio', { digestId, error: err })
+          await bot.sendMessage(chatId, '❌ Не удалось сгенерировать аудио. Попробуйте позже.')
+        } finally {
+          await bot.deleteMessage(chatId, processingMsg.message_id).catch(() => {})
+        }
       }
     }
 

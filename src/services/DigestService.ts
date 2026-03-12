@@ -130,6 +130,10 @@ async function sendDigestGroup(
   }))
 
   try {
+    const audioButton = {
+      inline_keyboard: [[{ text: '🔊 Получить аудио вывод', callback_data: `audio:${digest.id}` }]],
+    }
+
     if (analyticsOnly) {
       const label = groupName ? `🧠 Аналитика: ${groupName}` : '🧠 Аналитика дня'
       let analyticsText: string
@@ -140,9 +144,14 @@ async function sendDigestGroup(
         throw err
       }
       const analyticsMessage = `<b>${label}</b>\n\n${analyticsText}`
+      await prisma.digest.update({ where: { id: digest.id }, data: { analyticsText: analyticsMessage } })
       const analyticsParts = splitText(analyticsMessage, MAX_MESSAGE_LENGTH)
-      for (const part of analyticsParts) {
-        await bot.sendMessage(telegramId, part, { parse_mode: 'HTML' })
+      for (let i = 0; i < analyticsParts.length; i++) {
+        const isLast = i === analyticsParts.length - 1
+        await bot.sendMessage(telegramId, analyticsParts[i], {
+          parse_mode: 'HTML',
+          ...(isLast ? { reply_markup: audioButton } : {}),
+        })
       }
     } else {
       const text = formatDigestText(messages, periodStart, groupName)
@@ -162,9 +171,14 @@ async function sendDigestGroup(
       if (summaryText) {
         const label = groupName ? `🧠 Аналитика: ${groupName}` : '🧠 Аналитика дня'
         const summaryMessage = `<b>${label}</b>\n\n${summaryText}`
+        await prisma.digest.update({ where: { id: digest.id }, data: { analyticsText: summaryMessage } })
         const summaryParts = splitText(summaryMessage, MAX_MESSAGE_LENGTH)
-        for (const part of summaryParts) {
-          await bot.sendMessage(telegramId, part, { parse_mode: 'HTML' })
+        for (let i = 0; i < summaryParts.length; i++) {
+          const isLast = i === summaryParts.length - 1
+          await bot.sendMessage(telegramId, summaryParts[i], {
+            parse_mode: 'HTML',
+            ...(isLast ? { reply_markup: audioButton } : {}),
+          })
         }
       }
     }

@@ -85,17 +85,18 @@ model Message {
 }
 
 model Digest {
-  id          Int           @id @default(autoincrement())
-  userId      Int
-  groupId     Int?
-  groupName   String?
-  generatedAt DateTime      @default(now())
-  sentAt      DateTime?
-  periodStart DateTime
-  periodEnd   DateTime
-  status      DigestStatus  @default(PENDING)
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages    DigestMessage[]
+  id            Int           @id @default(autoincrement())
+  userId        Int
+  groupId       Int?
+  groupName     String?
+  generatedAt   DateTime      @default(now())
+  sentAt        DateTime?
+  periodStart   DateTime
+  periodEnd     DateTime
+  status        DigestStatus  @default(PENDING)
+  analyticsText String?
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages      DigestMessage[]
 }
 
 enum DigestStatus {
