@@ -39,12 +39,17 @@ function wasMissedRecently(digestTime: string, timezone: string): boolean {
   return diffMs > 0 && diffMs <= CATCHUP_WINDOW_MS
 }
 
-async function hasRecentDigest(userId: number): Promise<boolean> {
-  const cutoff = new Date(Date.now() - 23 * 60 * 60 * 1000)
+async function hasRecentDigest(userId: number, timezone: string): Promise<boolean> {
+  const now = new Date()
+  const userDateStr = now.toLocaleDateString('en-CA', { timeZone: timezone }) // YYYY-MM-DD
+  const startOfDay = new Date(`${userDateStr}T00:00:00`)
+  const tzOffset = new Date(now.toLocaleString('en-US', { timeZone: timezone })).getTime() - now.getTime()
+  const startOfDayUTC = new Date(startOfDay.getTime() - tzOffset)
+
   const recent = await prisma.digest.findFirst({
     where: {
       userId,
-      generatedAt: { gte: cutoff },
+      generatedAt: { gte: startOfDayUTC },
       status: 'SENT',
     },
   })
@@ -76,7 +81,7 @@ async function triggerDigests(): Promise<void> {
   for (const user of users) {
     try {
       if (!isTimeToSend(user.digestTime, user.timezone)) continue
-      if (await hasRecentDigest(user.id)) continue
+      if (await hasRecentDigest(user.id, user.timezone)) continue
       usersToDigest.push(user.id)
     } catch (error) {
       logger.error('Error checking user digest time', { userId: user.id, error })
@@ -104,7 +109,7 @@ async function catchUpMissedDigests(): Promise<void> {
   for (const user of users) {
     try {
       if (!wasMissedRecently(user.digestTime, user.timezone)) continue
-      if (await hasRecentDigest(user.id)) continue
+      if (await hasRecentDigest(user.id, user.timezone)) continue
       usersToDigest.push(user.id)
     } catch (error) {
       logger.error('Error checking missed digest', { userId: user.id, error })
